@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(find:*)",
+      "Bash(for file in D:/SimAI/WWIISim-v2/backend/core/*.py D:/SimAI/WWIISim-v2/backend/workflows/*.py D:/SimAI/WWIISim-v2/backend/api/*.py D:/SimAI/WWIISim-v2/backend/services/*.py D:/SimAI/WWIISim-v2/backend/ai/*.py)",
+      "Bash(do if [ -f \"$file\" ])",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(venvScriptspython.exe -c \"import sys; print\\(sys.version\\)\")",
+      "Bash(venvScriptspython.exe:*)",
+      "Bash(./venv/Scripts/python.exe:*)",
+      "Bash(curl:*)",
+      "Bash(start \"\" \"D:\\\\SimAI\\\\WWIISim-v2\\\\frontend\\\\index.html\")",
+      "Bash(test:*)",
+      "Bash(cat:*)",
+      "Bash(echo \"需要执行的命令（示例，不执行）：\n# 1. 停止当前服务器\n# 2. 启动多Agent服务器\ncd /d/SimAI/WWIISim-v2\n./venv/Scripts/python.exe -m uvicorn backend.api.multi_agent_server:app --host 0.0.0.0 --port 8001\n# 3. 打开多Agent前端\nstart frontend/multi_agent.html\")",
+      "Bash(start \"\" \"D:\\\\SimAI\\\\WWIISim-v2\\\\frontend\\\\multi_agent.html\")",
+      "Bash(python:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}

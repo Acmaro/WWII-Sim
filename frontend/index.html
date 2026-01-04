@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交互式二战历史推演</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 12px;
+            font-size: 13px;
+        }
+
+        .container {
+            max-width: 1900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 0.95em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 320px 1fr 320px;
+            grid-template-rows: auto 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+            height: calc(100vh - 150px);
+        }
+
+        .panel {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+
+        .panel h2 {
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .player-info-panel {
+            grid-column: 1 / -1;
+            grid-row: 1;
+            padding: 12px 20px;
+        }
+
+        /* 左侧 - 战略选项 */
+        .branches-wrapper {
+            grid-column: 1;
+            grid-row: 2;
+            overflow-y: auto;
+        }
+
+        /* 中间 - 时间线 */
+        .timeline-wrapper {
+            grid-column: 2;
+            grid-row: 2;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 右侧 - 行动结果 + 各国状态 */
+        .right-sidebar {
+            grid-column: 3;
+            grid-row: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+        }
+
+        .action-result-panel {
+            flex-shrink: 0;
+        }
+
+        .country-states-panel-wrapper {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .timeline-container {
+            flex: 1;
+            position: relative;
+            overflow: auto;
+            min-height: 0;
+        }
+
+        .control-panel h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .current-node-panel,
+        .action-result-panel,
+        .country-states-panel-wrapper {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .action-result-panel {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .country-states-panel-wrapper {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .current-node {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .current-node h3 {
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+
+        .current-node .year {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .current-node .description {
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .branches-container {
+            /* 移除margin-top，因为现在在独立panel中 */
+        }
+
+        .branches-wrapper h2 {
+            position: sticky;
+            top: 0;
+            background: white;
+            padding-bottom: 10px;
+            z-index: 10;
+        }
+
+        .branch-option {
+            background: #f7f9fc;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .branch-option:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .branch-option h4 {
+            color: #333;
+            margin-bottom: 6px;
+            font-size: 1em;
+        }
+
+        .branch-option .description {
+            color: #666;
+            font-size: 0.88em;
+            line-height: 1.4;
+            margin-bottom: 6px;
+        }
+
+        .branch-option .likelihood {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+        }
+
+        .branch-option .time-cost {
+            display: inline-block;
+            background: #ffa500;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+
+        .risk-badge {
+            display: inline-block;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+            font-size: 1.1em;
+        }
+
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        /* ⭐ 增强的加载动画 */
+        .spinner {
+            border: 3px solid rgba(102, 126, 234, 0.2);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 0.8s linear infinite;
+            margin: 10px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            border-radius: 12px;
+        }
+
+        .loading-text {
+            margin-top: 10px;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            width: 80%;
+            height: 4px;
+            background: rgba(102, 126, 234, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            animation: progress 2s ease-in-out infinite;
+        }
+
+        @keyframes progress {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 100%; }
+        }
+
+        /* D3可视化样式 */
+        .node circle {
+            stroke: #667eea;
+            stroke-width: 3px;
+        }
+
+        .node.choice circle {
+            fill: #ffd700;
+        }
+
+        .node.auto circle {
+            fill: #87ceeb;
+        }
+
+        .node.current circle {
+            fill: #ff6b6b;
+            stroke-width: 4px;
+        }
+
+        .node text {
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .link {
+            fill: none;
+            stroke: #999;
+            stroke-width: 2px;
+        }
+
+        .link.selected {
+            stroke: #667eea;
+            stroke-width: 3px;
+        }
+
+        .history-path {
+            background: #f7f9fc;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .history-path h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .history-path .path-item {
+            padding: 8px;
+            border-left: 3px solid #667eea;
+            margin-bottom: 8px;
+            padding-left: 12px;
+        }
+
+        .history-path .path-item .year {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        /* 国家状态面板样式 */
+        .country-states-wrapper {
+            overflow-y: auto;
+            max-height: 700px;
+        }
+
+        .country-states-wrapper h2 {
+            position: sticky;
+            top: 0;
+            background: white;
+            padding-bottom: 10px;
+            z-index: 10;
+        }
+
+        #countryBuffsList {
+            margin-top: 10px;
+        }
+
+        .country-item {
+            margin-bottom: 8px;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .country-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .country-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .country-name {
+            font-weight: bold;
+            color: #333;
+            font-size: 0.95em;
+        }
+
+        .country-alliance {
+            font-size: 0.8em;
+            color: #666;
+            padding: 2px 8px;
+            background: #e9ecef;
+            border-radius: 10px;
+        }
+
+        .buffs-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .buff-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            transition: transform 0.2s;
+            cursor: help;
+        }
+
+        .buff-tag:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .buff-positive {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+            border: 1px solid #b1dfbb;
+        }
+
+        .buff-negative {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+            border: 1px solid #f1b0b7;
+        }
+
+        .buff-neutral {
+            background: linear-gradient(135deg, #e2e3e5 0%, #d6d8db 100%);
+            color: #383d41;
+            border: 1px solid #c6c8ca;
+        }
+
+        .buff-strength {
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .buff-duration {
+            font-size: 0.75em;
+            opacity: 0.8;
+        }
+
+        .no-buffs {
+            color: #999;
+            font-style: italic;
+            font-size: 0.9em;
+            text-align: center;
+            padding: 10px;
+        }
+
+        .country-strength {
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px dashed #dee2e6;
+            font-size: 0.75em;
+            color: #666;
+        }
+
+        /* 国家选择界面样式 */
+        .country-selection-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .country-selection-panel {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        .country-selection-panel h2 {
+            text-align: center;
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 15px;
+        }
+
+        .country-selection-panel p {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .country-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .country-card {
+            background: linear-gradient(135deg, #f7f9fc 0%, #eef2f7 100%);
+            border: 3px solid #e1e8ed;
+            border-radius: 15px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .country-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .country-card.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .country-card .flag {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .country-card h3 {
+            font-size: 1.3em;
+            margin-bottom: 8px;
+        }
+
+        .country-card .alliance {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+
+        .country-card .description {
+            font-size: 0.85em;
+            line-height: 1.4;
+            opacity: 0.9;
+        }
+
+        .country-card.selected h3,
+        .country-card.selected .alliance,
+        .country-card.selected .description {
+            color: white;
+        }
+
+        .start-game-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 50px;
+            border-radius: 30px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .start-game-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .start-game-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 玩家国家显示 */
+        .player-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0;
+            border-radius: 10px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .player-info .flag {
+            font-size: 2.5em;
+        }
+
+        .player-info .country-name {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .player-info .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 国家选择界面 -->
+    <div id="countrySelection" class="country-selection-overlay">
+        <div class="country-selection-panel">
+            <h2>🌍 选择你的国家</h2>
+            <p>选择一个国家开始你的二战历史推演之旅</p>
+
+            <div class="country-options">
+                <div class="country-card" data-country="GER" onclick="selectCountry('GER')">
+                    <div class="flag">🦅</div>
+                    <h3>德国</h3>
+                    <div class="alliance">轴心国</div>
+                    <div class="description">指挥德国国防军，征服欧洲，改变历史</div>
+                </div>
+
+                <div class="country-card" data-country="UK" onclick="selectCountry('UK')">
+                    <div class="flag">🦁</div>
+                    <h3>英国</h3>
+                    <div class="alliance">盟军</div>
+                    <div class="description">领导大英帝国，捍卫自由世界</div>
+                </div>
+
+                <div class="country-card" data-country="USSR" onclick="selectCountry('USSR')">
+                    <div class="flag">⭐</div>
+                    <h3>苏联</h3>
+                    <div class="alliance">盟军</div>
+                    <div class="description">统率红军，保卫祖国，反击侵略</div>
+                </div>
+            </div>
+
+            <button id="startGameBtn" class="start-game-btn" disabled onclick="startGame()">
+                开始游戏
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>🎖️ 交互式二战历史推演</h1>
+            <p class="subtitle">选择分支，创造属于你的平行历史</p>
+        </header>
+
+        <div class="main-content">
+            <!-- 顶部横条：玩家国家信息 -->
+            <div id="playerInfo" class="panel player-info player-info-panel" style="display: none;">
+                <span class="label">你正在扮演：</span>
+                <span class="flag" id="playerFlag">🦅</span>
+                <span class="country-name" id="playerCountryName">德国</span>
+            </div>
+
+            <!-- 左侧：战略选项 -->
+            <div class="panel branches-wrapper">
+                <h2 style="color: #667eea;">🎯 战略选项</h2>
+                <div id="branchesContainer" class="branches-container">
+                    <button class="btn" onclick="generateBranches()">生成战略选项</button>
+                </div>
+            </div>
+
+            <!-- 中间：时间线可视化 -->
+            <div class="panel timeline-wrapper">
+                <h2 style="color: #667eea;">📊 历史时间线</h2>
+                <div id="timeline" class="timeline-container"></div>
+            </div>
+
+            <!-- 右侧：行动结果 + 各国状态 -->
+            <div class="right-sidebar">
+                <!-- 行动结果 -->
+                <div id="actionResultPanel" class="panel action-result-panel" style="display: none;">
+                    <h2 style="color: #667eea;">🎲 行动结果</h2>
+                    <div id="actionResultContent"></div>
+                </div>
+
+                <!-- 各国状态 -->
+                <div class="panel country-states-panel-wrapper">
+                    <h2 style="color: #667eea;">🌍 各国状态</h2>
+                    <div id="countryBuffsList">
+                        <p class="no-buffs">加载中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局状态
+        let sessionId = null;
+        let historyTree = null;
+        let currentNodeId = 'root';
+        let worldState = null;  // 国家状态
+        let playerCountry = null;  // 玩家选择的国家
+        let playerCountryInfo = null;  // 玩家国家详细信息
+        const API_BASE = 'http://localhost:8000';
+
+        // 国家配置
+        const COUNTRY_FLAGS = {
+            'GER': '🦅',
+            'UK': '🦁',
+            'USSR': '⭐',
+            'USA': '🦅',
+            'FRA': '🐓',
+            'JAP': '🌸',
+            'WORLD': '🌍'
+        };
+
+        // 国家选择
+        let selectedCountry = null;
+
+        function selectCountry(country) {
+            // 移除所有选中状态
+            document.querySelectorAll('.country-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            // 添加选中状态
+            document.querySelector(`.country-card[data-country="${country}"]`).classList.add('selected');
+            selectedCountry = country;
+
+            // 启用开始按钮
+            document.getElementById('startGameBtn').disabled = false;
+
+            console.log('选择国家:', country);
+        }
+
+        async function startGame() {
+            if (!selectedCountry) {
+                alert('请先选择一个国家');
+                return;
+            }
+
+            // 隐藏国家选择界面
+            document.getElementById('countrySelection').style.display = 'none';
+
+            // 初始化游戏
+            await init(selectedCountry);
+        }
+
+        // ⭐ 加载提示工具函数
+        function showLoading(containerId, message = '正在生成...') {
+            const container = document.getElementById(containerId);
+            container.style.position = 'relative';
+            const overlay = document.createElement('div');
+            overlay.className = 'loading-overlay';
+            overlay.id = `loading-${containerId}`;
+            overlay.innerHTML = `
+                <div class="spinner"></div>
+                <div class="loading-text">${message}</div>
+                <div class="progress-bar"><div class="progress-fill"></div></div>
+            `;
+            container.appendChild(overlay);
+        }
+
+        function hideLoading(containerId) {
+            const overlay = document.getElementById(`loading-${containerId}`);
+            if (overlay) {
+                overlay.remove();
+            }
+        }
+
+        // 初始化游戏
+        async function init(country) {
+            try {
+                const response = await fetch(`${API_BASE}/api/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        player_country: country
+                    })
+                });
+                const data = await response.json();
+
+                sessionId = data.session_id;
+                playerCountry = data.player_country;
+                playerCountryInfo = data.country_info;
+
+                historyTree = {
+                    nodes: {
+                        'root': data.start_node
+                    },
+                    path: ['root'],
+                    current_node: 'root',
+                    player_country: playerCountry
+                };
+
+                currentNodeId = 'root';
+
+                console.log('✅ 会话已创建:', sessionId);
+                console.log('✅ 玩家国家:', playerCountryInfo.name);
+
+                // 显示玩家国家信息
+                document.getElementById('playerInfo').style.display = 'block';
+                document.getElementById('playerFlag').textContent = COUNTRY_FLAGS[playerCountry] || '🌍';
+                document.getElementById('playerCountryName').textContent = playerCountryInfo.name;
+
+                // 隐藏行动结果面板
+                document.getElementById('actionResultPanel').style.display = 'none';
+
+                // ⭐ 初始化国家状态显示
+                if (data.world_state) {
+                    updateCountryStates(data.world_state);
+                }
+
+                updateCurrentNode();
+                updateVisualization();
+
+                // ⭐ 自动生成第一批分支
+                setTimeout(() => {
+                    generateBranches();
+                }, 500);
+
+            } catch (error) {
+                console.error('❌ 初始化失败:', error);
+                alert('无法连接到服务器，请确保后端正在运行 (python backend/api_server.py)');
+            }
+        }
+
+        // 生成分支选项
+        async function generateBranches() {
+            const container = document.getElementById('branchesContainer');
+            container.innerHTML = '';  // 清空内容
+            showLoading('branchesContainer', '⚙️ AI正在分析局势并生成选项...');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/branches`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        current_node_id: currentNodeId
+                    })
+                });
+
+                const data = await response.json();
+
+                console.log('✅ 收到分支数据:', data.branches);
+
+                // ⭐ 更新国家状态
+                if (data.world_state) {
+                    updateCountryStates(data.world_state);
+                }
+
+                // ⚠️ 关键1：更新父节点（包含children_ids）
+                if (data.updated_parent) {
+                    console.log('更新父节点:', data.updated_parent.id, 'children:', data.updated_parent.children_ids);
+                    historyTree.nodes[data.updated_parent.id] = data.updated_parent;
+                }
+
+                // ⚠️ 关键2：立即将分支节点添加到historyTree
+                data.branches.forEach(branch => {
+                    console.log('添加分支节点到树:', branch.id, branch.name);
+                    historyTree.nodes[branch.id] = branch;
+                });
+
+                // ⭐ 关键3：将分支链接到当前节点
+                const currentNode = historyTree.nodes[currentNodeId];
+                if (currentNode) {
+                    if (!currentNode.children_ids) {
+                        currentNode.children_ids = [];
+                    }
+                    // 添加所有新分支
+                    data.branches.forEach(branch => {
+                        if (!currentNode.children_ids.includes(branch.id)) {
+                            currentNode.children_ids.push(branch.id);
+                            console.log(`✅ 链接 ${currentNodeId} -> ${branch.id}`);
+                        }
+                    });
+                }
+
+                // ⭐ 隐藏加载动画
+                hideLoading('branchesContainer');
+
+                // 显示分支选项
+                displayBranches(data.branches);
+
+                // ⚠️ 关键3：立即更新可视化
+                console.log('准备更新可视化，当前节点数:', Object.keys(historyTree.nodes).length);
+                updateVisualization();
+
+            } catch (error) {
+                console.error('❌ 生成分支失败:', error);
+                hideLoading('branchesContainer');
+                container.innerHTML = '<p style="color: red;">生成失败，请重试</p>';
+            }
+        }
+
+        // 显示行动结果（在独立面板中）
+        function displayActionResult(actionResult) {
+            const panel = document.getElementById('actionResultPanel');
+            const content = document.getElementById('actionResultContent');
+
+            // 显示面板
+            panel.style.display = 'block';
+
+            // 结果样式
+            const outcomeColors = {
+                '完全成功': '#28a745',
+                '部分成功': '#ffc107',
+                '失败': '#dc3545'
+            };
+            const outcomeColor = outcomeColors[actionResult.outcome] || '#ffc107';
+            const successScore = (actionResult.success_score * 100).toFixed(0);
+
+            content.innerHTML = `
+                <div class="action-result" style="
+                    border: 3px solid ${outcomeColor};
+                    border-radius: 12px;
+                    padding: 15px;
+                    background: linear-gradient(135deg, ${outcomeColor}22 0%, ${outcomeColor}11 100%);
+                ">
+                    <div style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        margin-bottom: 12px;
+                    ">
+                        <h3 style="color: ${outcomeColor}; margin: 0;">
+                            ${actionResult.outcome}
+                        </h3>
+                        <span style="
+                            color: ${outcomeColor};
+                            font-size: 1.3em;
+                            font-weight: bold;
+                        ">${successScore}%</span>
+                    </div>
+                    <div style="
+                        background: rgba(255,255,255,0.7);
+                        padding: 10px;
+                        border-radius: 8px;
+                        border-left: 4px solid ${outcomeColor};
+                        margin-bottom: 10px;
+                    ">
+                        <p style="margin: 0; line-height: 1.5; font-size: 0.95em;">
+                            ${actionResult.result_description}
+                        </p>
+                    </div>
+                    ${actionResult.impacts && actionResult.impacts.length > 0 ? `
+                        <div style="margin-top: 10px;">
+                            <strong style="font-size: 0.9em;">🌍 对各国影响：</strong>
+                            <ul style="margin: 5px 0 0 0; padding-left: 20px; font-size: 0.9em;">
+                                ${actionResult.impacts.map(impact => `
+                                    <li>${COUNTRY_FLAGS[impact.country] || '🌍'} ${impact.effect} <span style="color: #666;">(${impact.severity})</span></li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            // 在选项区显示等待提示
+            const branchesContainer = document.getElementById('branchesContainer');
+            branchesContainer.innerHTML = '<div class="loading">正在生成各国反应...</div>';
+        }
+
+        // 显示分支选项
+        function displayBranches(branches) {
+            const container = document.getElementById('branchesContainer');
+            container.innerHTML = '<h3 style="color: #667eea; margin-bottom: 15px;">🎯 选择你的行动</h3>';
+
+            branches.forEach(branch => {
+                const div = document.createElement('div');
+                div.className = 'branch-option';
+
+                // 风险等级样式
+                const riskLevel = branch.risk_level || '中';
+                const riskColors = {'低': '#28a745', '中': '#ffc107', '高': '#dc3545'};
+                const riskColor = riskColors[riskLevel] || '#ffc107';
+
+                // 时间消耗
+                const monthsDuration = branch.months_duration || 2;
+                const timeInfo = `<span class="time-cost">⏱️ ${monthsDuration}个月</span>`;
+
+                div.innerHTML = `
+                    <h4>${branch.name}</h4>
+                    <p class="description">${branch.description}</p>
+                    <div style="display: flex; gap: 10px; margin-top: 8px; align-items: center;">
+                        <span class="likelihood">成功率: ${(branch.likelihood * 100).toFixed(0)}%</span>
+                        ${timeInfo}
+                        <span class="risk-badge" style="background-color: ${riskColor};">
+                            风险: ${riskLevel}
+                        </span>
+                    </div>
+                `;
+                div.onclick = () => chooseBranch(branch.id);
+                container.appendChild(div);
+            });
+        }
+
+        // 选择分支
+        async function chooseBranch(branchId) {
+            const container = document.getElementById('branchesContainer');
+            container.innerHTML = '';
+            showLoading('branchesContainer', '🎲 AI正在评估行动结果...');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/choose`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        node_id: currentNodeId,
+                        choice_id: branchId
+                    })
+                });
+
+                const data = await response.json();
+                console.log('📦 收到响应:', response.status, data);
+
+                if (data.success) {
+                    console.log('✅ 行动执行完成，收到数据:', data);
+
+                    // ⭐ 重要：先将选择的分支节点加入路径
+                    if (!historyTree.path.includes(branchId)) {
+                        historyTree.path.push(branchId);
+                        console.log(`✅ 分支节点 ${branchId} 加入路径`);
+                    }
+
+                    // ⭐ 显示行动结果
+                    if (data.action_result) {
+                        displayActionResult(data.action_result);
+                    }
+
+                    // ⭐ 更新国家状态
+                    if (data.world_state) {
+                        updateCountryStates(data.world_state);
+                    }
+
+                    // 更新历史树 - 添加结果节点和反应节点
+                    if (data.result_node) {
+                        historyTree.nodes[data.result_node.id] = data.result_node;
+
+                        // ⭐ 重要：更新行动节点的 children_ids
+                        const actionNode = historyTree.nodes[branchId];
+                        if (actionNode) {
+                            if (!actionNode.children_ids) {
+                                actionNode.children_ids = [];
+                            }
+                            if (!actionNode.children_ids.includes(data.result_node.id)) {
+                                actionNode.children_ids.push(data.result_node.id);
+                                console.log(`✅ 链接 ${branchId} -> ${data.result_node.id}`);
+                            }
+                        }
+
+                        if (!historyTree.path.includes(data.result_node.id)) {
+                            historyTree.path.push(data.result_node.id);
+                        }
+                    }
+
+                    // 添加反应节点
+                    let lastParentId = data.result_node?.id || branchId;
+                    if (data.reaction_nodes && data.reaction_nodes.length > 0) {
+                        data.reaction_nodes.forEach((node, index) => {
+                            console.log('添加反应节点:', node.id, node.name);
+                            historyTree.nodes[node.id] = node;
+
+                            // 更新父节点的children_ids
+                            if (!historyTree.nodes[lastParentId].children_ids) {
+                                historyTree.nodes[lastParentId].children_ids = [];
+                            }
+                            if (!historyTree.nodes[lastParentId].children_ids.includes(node.id)) {
+                                historyTree.nodes[lastParentId].children_ids.push(node.id);
+                            }
+
+                            if (!historyTree.path.includes(node.id)) {
+                                historyTree.path.push(node.id);
+                            }
+
+                            lastParentId = node.id;
+                        });
+                    }
+
+                    currentNodeId = data.current_node;
+                    historyTree.current_node = currentNodeId;
+
+                    console.log('更新后的路径:', historyTree.path);
+                    console.log('当前节点:', currentNodeId);
+
+                    // 更新界面
+                    updateCurrentNode();
+                    updateHistoryPath();
+                    updateVisualization();
+
+                    // ⭐ 自动生成下一组分支（延迟1.5秒，让用户看到结果）
+                    // 先隐藏加载动画
+                    hideLoading('branchesContainer');
+
+                    setTimeout(() => {
+                        generateBranches();
+                    }, 1500);
+                } else {
+                    console.error('❌ 响应中 success=false，完整数据:', data);
+                    throw new Error(data.error || data.message || '未知错误');
+                }
+
+            } catch (error) {
+                console.error('❌ 选择分支失败:', error);
+                hideLoading('branchesContainer');
+                container.innerHTML = '<p style="color: red;">选择失败，请重试</p>';
+            }
+        }
+
+        // 更新当前节点显示
+        function updateCurrentNode() {
+            const node = historyTree.nodes[currentNodeId];
+            const container = document.getElementById('currentNode');
+
+            // 如果元素不存在（已被移除），跳过更新
+            if (!container) {
+                console.log('📍 当前位置面板不存在，跳过更新');
+                return;
+            }
+
+            const monthStr = node.month ? `年${node.month}月` : '年';
+
+            container.innerHTML = `
+                <div class="year">${node.year}${monthStr}</div>
+                <h3>${node.name}</h3>
+                <p class="description">${node.description}</p>
+            `;
+        }
+
+        // 更新历史路径
+        function updateHistoryPath() {
+            const container = document.getElementById('historyPath');
+            const pathList = document.getElementById('pathList');
+
+            // 如果元素不存在（已被移除），跳过更新
+            if (!container || !pathList) {
+                console.log('📜 历史路径面板不存在，跳过更新');
+                return;
+            }
+
+            container.style.display = 'block';
+            pathList.innerHTML = '';
+
+            historyTree.path.forEach(nodeId => {
+                const node = historyTree.nodes[nodeId];
+                const div = document.createElement('div');
+                div.className = 'path-item';
+                const monthStr = node.month ? `年${node.month}月` : '年';
+                div.innerHTML = `
+                    <span class="year">${node.year}${monthStr}</span> - ${node.name}
+                `;
+                pathList.appendChild(div);
+            });
+        }
+
+        // 更新国家状态显示
+        function updateCountryStates(world_state_data) {
+            worldState = world_state_data;
+            const container = document.getElementById('countryBuffsList');
+
+            if (!worldState || !worldState.countries) {
+                container.innerHTML = '<p class="no-buffs">暂无数据</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+
+            // 按buff数量排序（有buff的国家优先）
+            const sortedCountries = Object.entries(worldState.countries)
+                .sort((a, b) => b[1].buffs.length - a[1].buffs.length);
+
+            sortedCountries.forEach(([code, country]) => {
+                if (country.buffs && country.buffs.length > 0) {
+                    const countryDiv = document.createElement('div');
+                    countryDiv.className = 'country-item';
+
+                    // 构建国家头部
+                    const headerDiv = document.createElement('div');
+                    headerDiv.className = 'country-header';
+                    headerDiv.innerHTML = `
+                        <span class="country-name">${country.country_name}</span>
+                        <span class="country-alliance">${country.alliance || '中立'}</span>
+                    `;
+                    countryDiv.appendChild(headerDiv);
+
+                    // 构建buff容器
+                    const buffsDiv = document.createElement('div');
+                    buffsDiv.className = 'buffs-container';
+
+                    country.buffs.forEach(buff => {
+                        const buffTag = document.createElement('span');
+                        buffTag.className = `buff-tag buff-${buff.effect}`;
+                        buffTag.title = buff.description;
+
+                        const strengthSymbol = buff.effect === 'positive' ? '+' :
+                                              buff.effect === 'negative' ? '-' : '';
+                        const durationText = buff.duration > 0 ?
+                            `<span class="buff-duration">(${buff.duration}月)</span>` : '';
+
+                        buffTag.innerHTML = `
+                            ${buff.name}
+                            <span class="buff-strength">${strengthSymbol}${buff.strength}</span>
+                            ${durationText}
+                        `;
+
+                        buffsDiv.appendChild(buffTag);
+                    });
+
+                    countryDiv.appendChild(buffsDiv);
+
+                    // 添加总强度信息（可选）
+                    if (country.total_strength) {
+                        const strengthDiv = document.createElement('div');
+                        strengthDiv.className = 'country-strength';
+                        const overall = country.total_strength.overall;
+                        const symbol = overall > 0 ? '+' : overall < 0 ? '-' : '±';
+                        strengthDiv.innerHTML = `综合实力: ${symbol}${Math.abs(overall)}`;
+                        countryDiv.appendChild(strengthDiv);
+                    }
+
+                    container.appendChild(countryDiv);
+                }
+            });
+
+            // 如果没有国家有buff
+            if (container.children.length === 0) {
+                container.innerHTML = '<p class="no-buffs">暂无活跃buff</p>';
+            }
+
+            console.log('✅ 国家状态已更新');
+        }
+
+        // 保存缩放状态的全局变量
+        let savedZoomTransform = null;
+        let isFirstRender = true;
+
+        // D3可视化（带缩放功能）
+        function updateVisualization() {
+            console.log('🎨 更新可视化...', {
+                nodes: Object.keys(historyTree.nodes).length,
+                path: historyTree.path.length,
+                current: currentNodeId
+            });
+
+            const container = document.getElementById('timeline');
+
+            // ⚠️ 保存当前缩放状态（如果存在）
+            const oldSvg = d3.select('#timeline svg');
+            if (!oldSvg.empty() && !isFirstRender) {
+                const zoomNode = oldSvg.node();
+                if (zoomNode.__zoom) {
+                    savedZoomTransform = zoomNode.__zoom;
+                    console.log('💾 保存缩放状态:', savedZoomTransform);
+                }
+            }
+
+            // 完全清空容器
+            d3.select('#timeline').selectAll('*').remove();
+
+            const width = container.clientWidth;
+            const height = 600;
+
+            // 创建SVG
+            const svg = d3.select('#timeline')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+
+            // 构建树结构
+            const root = buildTreeData();
+
+            if (!root) {
+                console.error('❌ 树数据构建失败');
+                return;
+            }
+
+            console.log('✅ 树数据构建成功', root);
+
+            // ⭐ 使用标准树布局
+            const treeData = d3.hierarchy(root);
+
+            // 计算树的尺寸（根据节点数动态调整）
+            const nodeCount = treeData.descendants().length;
+            const treeHeight = Math.max(500, nodeCount * 60);
+            const treeWidth = Math.max(800, treeData.height * 250);
+
+            // 创建树布局
+            const treeLayout = d3.tree()
+                .size([treeHeight, treeWidth - 200])
+                .separation((a, b) => {
+                    // 增加兄弟节点间距
+                    return a.parent === b.parent ? 1.5 : 2;
+                });
+
+            // 应用树布局
+            treeLayout(treeData);
+
+            const nodes = treeData.descendants();
+            const links = treeData.links();
+
+            // 创建可缩放的组
+            const g = svg.append('g');
+
+            // ⭐ 添加缩放功能
+            const zoom = d3.zoom()
+                .scaleExtent([0.1, 3])  // 缩放范围：10% - 300%
+                .on('zoom', (event) => {
+                    g.attr('transform', event.transform);
+                });
+
+            svg.call(zoom);
+
+            // ⚠️ 恢复之前的缩放状态，或设置初始位置
+            if (savedZoomTransform && !isFirstRender) {
+                // 有保存的状态，但要检查是否需要聚焦到新节点
+                // 先恢复状态，稍后会判断是否需要聚焦
+                svg.call(zoom.transform, savedZoomTransform);
+                console.log('🔄 恢复缩放状态:', savedZoomTransform);
+            } else {
+                // 仅第一次渲染时设置初始位置
+                const initialX = 100;
+                const initialY = height / 2;
+                svg.call(zoom.transform, d3.zoomIdentity.translate(initialX, initialY - treeHeight / 2));
+                console.log('🎯 设置初始缩放位置');
+                isFirstRender = false;
+            }
+
+            // 绘制连线
+            g.selectAll('.link')
+                .data(links)
+                .enter()
+                .append('path')
+                .attr('class', d => {
+                    const isInPath = historyTree.path.includes(d.target.data.id);
+                    return isInPath ? 'link selected' : 'link';
+                })
+                .attr('d', d3.linkHorizontal()
+                    .x(d => d.y)
+                    .y(d => d.x));
+
+            console.log('✅ 绘制了', links.length, '条连线');
+
+            // 绘制节点
+            const nodeElements = g.selectAll('.node')
+                .data(nodes)
+                .enter()
+                .append('g')
+                .attr('class', d => {
+                    let className = 'node';
+                    if (d.data.id === currentNodeId) className += ' current';
+                    else if (d.data.is_user_choice) className += ' choice';
+                    else className += ' auto';
+                    return className;
+                })
+                .attr('transform', d => `translate(${d.y},${d.x})`);
+
+            nodeElements.append('circle')
+                .attr('r', 8);
+
+            // 年月标签
+            nodeElements.append('text')
+                .attr('dy', -15)
+                .attr('text-anchor', 'middle')
+                .style('font-size', '10px')
+                .text(d => {
+                    const monthStr = d.data.month ? `.${d.data.month}` : '';
+                    return `${d.data.year}${monthStr}`;
+                });
+
+            // 事件名称（支持多行换行）
+            nodeElements.each(function(d) {
+                const text = d3.select(this).append('text')
+                    .attr('text-anchor', 'middle')
+                    .style('font-size', '11px')
+                    .style('font-weight', 'normal');
+
+                // 将文本分成多行（每行最多6个字符）
+                const name = d.data.name;
+                const maxCharsPerLine = 6;
+                const lines = [];
+
+                for (let i = 0; i < name.length; i += maxCharsPerLine) {
+                    lines.push(name.substring(i, i + maxCharsPerLine));
+                }
+
+                // 添加每一行
+                lines.forEach((line, i) => {
+                    text.append('tspan')
+                        .attr('x', 0)
+                        .attr('dy', i === 0 ? 20 : 12)  // 第一行dy=20，后续行dy=12
+                        .text(line);
+                });
+            });
+
+            console.log('✅ 绘制了', nodeElements.size(), '个节点');
+
+            // ⭐ 自动聚焦到当前节点
+            const currentNode = treeData.descendants().find(d => d.data.id === currentNodeId);
+            if (currentNode && !isFirstRender) {
+                const scale = savedZoomTransform ? savedZoomTransform.k : 1;
+                const x = -currentNode.y * scale + width / 2;
+                const y = -currentNode.x * scale + height / 2;
+
+                svg.transition()
+                    .duration(750)
+                    .call(zoom.transform, d3.zoomIdentity.translate(x, y).scale(scale));
+
+                console.log('🎯 自动聚焦到节点:', currentNodeId, {x: currentNode.y, y: currentNode.x});
+            }
+
+            // 添加缩放提示
+            if (nodeCount > 5) {
+                svg.append('text')
+                    .attr('x', 10)
+                    .attr('y', 20)
+                    .style('font-size', '12px')
+                    .style('fill', '#667eea')
+                    .text('💡 使用鼠标滚轮缩放，拖拽移动');
+            }
+        }
+
+        // 构建树数据结构
+        function buildTreeData() {
+            const rootNode = historyTree.nodes['root'];
+            if (!rootNode) {
+                console.error('❌ Root节点不存在');
+                return null;
+            }
+
+            function buildNode(nodeId, depth = 0) {
+                const node = historyTree.nodes[nodeId];
+                if (!node) {
+                    console.warn(`⚠️ 节点 ${nodeId} 不存在 (深度${depth})`);
+                    return null;
+                }
+
+                console.log(`  ${'  '.repeat(depth)}构建节点: ${nodeId} - ${node.name} (${node.year}.${node.month})`);
+
+                const children = (node.children_ids || [])
+                    .map(childId => buildNode(childId, depth + 1))
+                    .filter(child => child !== null);
+
+                if (children.length > 0) {
+                    console.log(`  ${'  '.repeat(depth)}└─ ${children.length}个子节点`);
+                }
+
+                return {
+                    id: nodeId,
+                    year: node.year,
+                    month: node.month || 1,
+                    name: node.name,
+                    is_user_choice: node.is_user_choice,
+                    children: children.length > 0 ? children : null
+                };
+            }
+
+            console.log('🌳 开始构建树结构...');
+            const tree = buildNode('root');
+            console.log('🌳 树结构构建完成');
+            return tree;
+        }
+
+        // 不再自动初始化，等待用户选择国家
+        // window.onload = init; 已移除
+    </script>
+</body>
+</html>
