@@ -1,5 +1,5 @@
 """
-AI决策系统
+AI Decision System
 """
 
 import json
@@ -11,7 +11,7 @@ from backend.core.models import GameEvent
 
 
 class AIDecisionMaker:
-    """AI决策系统"""
+    """AI decision system"""
 
     def __init__(self, llm):
         self.llm = llm
@@ -22,66 +22,66 @@ class AIDecisionMaker:
         options: List[GameEvent],
         world_state: WorldState
     ) -> GameEvent:
-        """选择最佳行动"""
+        """Select best action"""
 
-        print(f"\n[AI决策] {agent.country_name} 正在分析 {len(options)} 个选项...")
+        print(f"\n[AI Decision] {agent.country_name} is analyzing {len(options)} options...")
 
-        # 构建决策提示词
+        # Build decision prompt
         prompt = ChatPromptTemplate.from_template("""
-你是{country_name}的最高决策者AI。
+You are the supreme decision-making AI for {country_name}.
 
-【当前态势】
-时间: {year}年{month}月
-军事实力: {military_power}
-经济实力: {economic_strength}
-外交点数: {diplomatic_points}
+【Current Situation】
+Time: {year}/{month}
+Military Power: {military_power}
+Economic Strength: {economic_strength}
+Diplomatic Points: {diplomatic_points}
 
-【外交关系】
+【Diplomatic Relations】
 {diplomatic_relations}
 
-【战略目标】
+【Strategic Objectives】
 {objectives}
 
-【性格特征】
-激进度: {aggression} (0-1, 越高越倾向军事行动)
-外交倾向: {diplomacy} (0-1, 越高越倾向外交手段)
-经济重视度: {economic_focus} (0-1, 越高越重视经济发展)
-风险承受度: {risk_tolerance} (0-1, 越高越敢冒险)
+【Personality Traits】
+Aggression: {aggression} (0-1, higher = more inclined to military action)
+Diplomacy: {diplomacy} (0-1, higher = more inclined to diplomatic means)
+Economic Focus: {economic_focus} (0-1, higher = more emphasis on economic development)
+Risk Tolerance: {risk_tolerance} (0-1, higher = more willing to take risks)
 
-【可选行动】
+【Available Actions】
 {options}
 
-【评估标准】
-1. 目标契合度: 行动是否有助于实现战略目标
-2. 风险评估: 行动的潜在风险是否在承受范围内
-3. 时机判断: 当前是否是执行该行动的最佳时机
-4. 国际影响: 行动对外交关系的影响
-5. 资源消耗: 行动所需资源是否充足
-6. 性格匹配: 行动是否符合Agent的性格特征
+【Evaluation Criteria】
+1. Objective Alignment: Does the action help achieve strategic objectives
+2. Risk Assessment: Are the potential risks within acceptable range
+3. Timing Judgment: Is now the optimal time to execute this action
+4. International Impact: Impact on diplomatic relations
+5. Resource Cost: Are sufficient resources available for this action
+6. Personality Match: Does the action align with the Agent's personality traits
 
-根据性格特征选择:
-- 如果 aggression 高: 优先考虑 military 类型
-- 如果 diplomacy 高: 优先考虑 diplomatic 类型
-- 如果 economic_focus 高: 优先考虑 economic 类型
+Selection based on personality traits:
+- If aggression is high: Prioritize military type
+- If diplomacy is high: Prioritize diplomatic type
+- If economic_focus is high: Prioritize economic type
 
-请分析每个选项，选择最优行动。
+Please analyze each option and select the optimal action.
 
-输出格式（纯JSON，不要markdown标记）:
+Output format (pure JSON, no markdown markers):
 {{
-  "selected_action_id": "行动ID",
-  "reasoning": "选择理由（50字内）",
-  "expected_outcome": "预期结果",
+  "selected_action_id": "action_id",
+  "reasoning": "reason for selection (within 50 words)",
+  "expected_outcome": "expected result",
   "risk_level": 0.5
 }}
 """)
 
-        # 格式化选项
+        # Format options
         options_text = self._format_options(options)
 
-        # 格式化外交关系
+        # Format diplomatic relations
         relations_text = self._format_relations(agent, world_state)
 
-        # 调用LLM
+        # Invoke LLM
         try:
             response = self.llm.invoke(
                 prompt.format(
@@ -101,10 +101,10 @@ class AIDecisionMaker:
                 )
             )
 
-            # 解析响应
+            # Parse response
             content = response.content.strip()
 
-            # 移除可能的markdown代码块标记
+            # Remove possible markdown code block markers
             if content.startswith("```"):
                 lines = content.split("\n")
                 content = "\n".join(lines[1:-1]) if len(lines) > 2 else content
@@ -112,41 +112,41 @@ class AIDecisionMaker:
             decision = json.loads(content)
             selected_id = decision["selected_action_id"]
 
-            # 记录决策理由
-            print(f"[AI决策] {agent.country_name} 选择: {selected_id}")
-            print(f"  理由: {decision['reasoning']}")
-            print(f"  风险: {decision.get('risk_level', 0.5):.1%}\n")
+            # Log decision reasoning
+            print(f"[AI Decision] {agent.country_name} selected: {selected_id}")
+            print(f"  Reasoning: {decision['reasoning']}")
+            print(f"  Risk: {decision.get('risk_level', 0.5):.1%}\n")
 
-            # 查找选择的行动
+            # Find selected action
             selected_action = next(
                 (opt for opt in options if opt.id == selected_id),
                 None
             )
 
             if selected_action is None:
-                print(f"[AI决策] 警告: 未找到ID={selected_id}的行动，使用第一个选项")
+                print(f"[AI Decision] Warning: Action ID={selected_id} not found, using first option")
                 selected_action = options[0]
 
             return selected_action
 
         except Exception as e:
-            print(f"[AI决策] 错误: {e}")
-            print(f"[AI决策] 降级使用第一个选项")
+            print(f"[AI Decision] Error: {e}")
+            print(f"[AI Decision] Falling back to first option")
             return options[0]
 
     def _format_options(self, options: List[GameEvent]) -> str:
-        """格式化选项列表"""
+        """Format options list"""
         lines = []
         for i, opt in enumerate(options, 1):
             lines.append(
                 f"{i}. [{opt.event_type}] {opt.name} (ID: {opt.id})\n"
-                f"   描述: {opt.description}\n"
-                f"   历史可能性: {opt.likelihood:.1%}"
+                f"   Description: {opt.description}\n"
+                f"   Historical Likelihood: {opt.likelihood:.1%}"
             )
         return "\n\n".join(lines)
 
     def _format_relations(self, agent: CountryAgent, world: WorldState) -> str:
-        """格式化外交关系"""
+        """Format diplomatic relations"""
         lines = []
         for country, other_agent in world.agents.items():
             if country == agent.country_code:
@@ -156,20 +156,20 @@ class AIDecisionMaker:
             status = self._relation_status(relation)
 
             lines.append(
-                f"与{other_agent.country_name}: {relation:+.2f} ({status})"
+                f"With {other_agent.country_name}: {relation:+.2f} ({status})"
             )
 
-        return "\n".join(lines) if lines else "无外交关系记录"
+        return "\n".join(lines) if lines else "No diplomatic relations recorded"
 
     def _relation_status(self, value: float) -> str:
-        """关系状态描述"""
+        """Relation status description"""
         if value >= 0.7:
-            return "盟友"
+            return "Allied"
         elif value >= 0.3:
-            return "友好"
+            return "Friendly"
         elif value >= -0.3:
-            return "中立"
+            return "Neutral"
         elif value >= -0.7:
-            return "敌对"
+            return "Hostile"
         else:
-            return "交战"
+            return "At War"
