@@ -1,5 +1,5 @@
 """
-多Agent系统 - 国家Agent模型
+Multi-Agent System - Country Agent Models
 """
 
 from enum import Enum
@@ -9,62 +9,62 @@ from datetime import datetime
 
 
 class ControlMode(str, Enum):
-    """控制模式"""
-    HUMAN = "human"          # 玩家控制
-    AI = "ai"                # AI自动控制
-    OBSERVER = "observer"    # 观察者（不参与）
+    """Control mode"""
+    HUMAN = "human"          # Player controlled
+    AI = "ai"                # AI controlled
+    OBSERVER = "observer"    # Observer (non-participant)
 
 
 class CountryAgent(BaseModel):
-    """国家Agent"""
-    country_code: str = Field(description="国家代码（GER/UK/USSR）")
-    country_name: str = Field(description="国家名称")
-    control_mode: ControlMode = Field(description="控制模式")
+    """Country agent"""
+    country_code: str = Field(description="Country code (GER/UK/USSR)")
+    country_name: str = Field(description="Country name")
+    control_mode: ControlMode = Field(description="Control mode")
 
-    # Agent状态
-    objectives: List[str] = Field(description="战略目标", default_factory=list)
+    # Agent state
+    objectives: List[str] = Field(description="Strategic objectives", default_factory=list)
     personality: Dict[str, float] = Field(
-        description="性格特征（aggression/diplomacy/economic_focus）",
+        description="Personality traits (aggression/diplomacy/economic_focus)",
         default_factory=dict
     )
     risk_tolerance: float = Field(
-        description="风险承受度 (0.0-1.0)",
+        description="Risk tolerance (0.0-1.0)",
         ge=0.0,
         le=1.0,
         default=0.5
     )
 
-    # 当前状态
-    current_year: int = Field(description="当前年份", ge=1939, le=1945)
-    current_month: int = Field(description="当前月份", ge=1, le=12)
+    # Current state
+    current_year: int = Field(description="Current year", ge=1939, le=1945)
+    current_month: int = Field(description="Current month", ge=1, le=12)
     resources: Dict[str, float] = Field(
-        description="资源（military/economic/diplomatic）",
+        description="Resources (military/economic/diplomatic)",
         default_factory=dict
     )
 
-    # 决策历史
+    # Decision history
     action_history: List[str] = Field(
-        description="历史行动ID列表",
+        description="Historical action ID list",
         default_factory=list
     )
 
-    # 待选选项（运行时）
+    # Pending options (runtime)
     pending_options: List[Any] = Field(
-        description="当前回合的待选选项",
+        description="Pending options for current turn",
         default_factory=list,
-        exclude=True  # 不序列化
+        exclude=True  # Not serialized
     )
 
     class Config:
         json_schema_extra = {
             "example": {
                 "country_code": "GER",
-                "country_name": "德国",
+                "country_name": "Germany",
                 "control_mode": "human",
                 "objectives": [
-                    "占领波兰",
-                    "避免两线作战",
-                    "建立欧洲霸权"
+                    "Occupy Poland",
+                    "Avoid two-front war",
+                    "Establish European hegemony"
                 ],
                 "personality": {
                     "aggression": 0.8,
@@ -84,57 +84,57 @@ class CountryAgent(BaseModel):
 
 
 class WorldState(BaseModel):
-    """全局世界状态"""
-    current_turn: int = Field(description="当前回合", default=1)
-    current_year: int = Field(description="当前年份", ge=1939, le=1945)
-    current_month: int = Field(description="当前月份", ge=1, le=12)
+    """Global world state"""
+    current_turn: int = Field(description="Current turn", default=1)
+    current_year: int = Field(description="Current year", ge=1939, le=1945)
+    current_month: int = Field(description="Current month", ge=1, le=12)
 
-    # 国家Agent
+    # Country agents
     agents: Dict[str, CountryAgent] = Field(
-        description="所有国家Agent (country_code -> Agent)",
+        description="All country agents (country_code -> Agent)",
         default_factory=dict
     )
 
-    # 外交关系（-1敌对到1友好）
+    # Diplomatic relations (-1 hostile to 1 friendly)
     diplomatic_relations: Dict[str, Dict[str, float]] = Field(
-        description="外交关系矩阵",
+        description="Diplomatic relations matrix",
         default_factory=dict
     )
 
-    # 军事态势
+    # Military situation
     military_power: Dict[str, float] = Field(
-        description="各国军力评分",
+        description="Military power scores by country",
         default_factory=dict
     )
 
-    # 控制的领土
+    # Controlled territories
     territories: Dict[str, List[str]] = Field(
-        description="各国控制的领土列表",
+        description="Territory lists controlled by each country",
         default_factory=dict
     )
 
-    # 经济状况
+    # Economic situation
     economic_strength: Dict[str, float] = Field(
-        description="各国经济实力",
+        description="Economic strength by country",
         default_factory=dict
     )
 
-    # 重大事件
+    # Major events
     major_events: List[str] = Field(
-        description="已发生的重大事件",
+        description="Major events that have occurred",
         default_factory=list
     )
 
-    # 创建时间
+    # Creation time
     created_at: datetime = Field(default_factory=datetime.now)
     last_updated: datetime = Field(default_factory=datetime.now)
 
     def get_agent(self, country: str) -> Optional[CountryAgent]:
-        """获取国家Agent"""
+        """Get country agent"""
         return self.agents.get(country)
 
     def update_relations(self, country1: str, country2: str, delta: float):
-        """更新外交关系"""
+        """Update diplomatic relations"""
         if country1 not in self.diplomatic_relations:
             self.diplomatic_relations[country1] = {}
 
@@ -142,7 +142,7 @@ class WorldState(BaseModel):
         new_value = max(-1.0, min(1.0, current + delta))
         self.diplomatic_relations[country1][country2] = new_value
 
-        # 双向更新
+        # Bidirectional update
         if country2 not in self.diplomatic_relations:
             self.diplomatic_relations[country2] = {}
         self.diplomatic_relations[country2][country1] = new_value
@@ -150,11 +150,11 @@ class WorldState(BaseModel):
         self.last_updated = datetime.now()
 
     def get_relation(self, country1: str, country2: str) -> float:
-        """获取两国关系"""
+        """Get relationship between two countries"""
         return self.diplomatic_relations.get(country1, {}).get(country2, 0.0)
 
     def add_major_event(self, event: str):
-        """添加重大事件"""
+        """Add major event"""
         self.major_events.append(event)
         self.last_updated = datetime.now()
 
@@ -165,81 +165,81 @@ class WorldState(BaseModel):
 
 
 class TurnPhase(str, Enum):
-    """回合阶段"""
-    PLANNING = "planning"          # 规划阶段（生成选项）
-    DECISION = "decision"          # 决策阶段（玩家/AI选择）
-    EXECUTION = "execution"        # 执行阶段（处理行动）
-    RESOLUTION = "resolution"      # 结算阶段（计算影响）
+    """Turn phase"""
+    PLANNING = "planning"          # Planning phase (generate options)
+    DECISION = "decision"          # Decision phase (player/AI choice)
+    EXECUTION = "execution"        # Execution phase (process actions)
+    RESOLUTION = "resolution"      # Resolution phase (calculate impact)
 
 
 class TurnResult(BaseModel):
-    """回合结果"""
-    turn_number: int = Field(description="回合编号")
+    """Turn result"""
+    turn_number: int = Field(description="Turn number")
     all_actions: Dict[str, Any] = Field(
-        description="所有国家的行动",
+        description="Actions by all countries",
         default_factory=dict
     )
     conflicts: List[Dict[str, Any]] = Field(
-        description="军事冲突",
+        description="Military conflicts",
         default_factory=list
     )
     diplomatic_changes: List[Dict[str, Any]] = Field(
-        description="外交关系变化",
+        description="Diplomatic relation changes",
         default_factory=list
     )
     economic_changes: List[Dict[str, Any]] = Field(
-        description="经济变化",
+        description="Economic changes",
         default_factory=list
     )
     major_events: List[str] = Field(
-        description="本回合重大事件",
+        description="Major events this turn",
         default_factory=list
     )
 
-    # 结局相关
+    # Ending related
     is_game_over: bool = Field(
-        description="游戏是否结束",
+        description="Whether game has ended",
         default=False
     )
     ending_trigger: Optional[str] = Field(
-        description="结局触发原因",
+        description="Reason for ending trigger",
         default=None
     )
 
 
 class GameEnding(BaseModel):
-    """游戏结局"""
-    ending_type: str = Field(description="结局类型：victory/defeat/draw/historical")
-    winner: Optional[str] = Field(description="胜利者国家代码", default=None)
-    trigger_reason: str = Field(description="结局触发原因")
+    """Game ending"""
+    ending_type: str = Field(description="Ending type: victory/defeat/draw/historical")
+    winner: Optional[str] = Field(description="Winner country code", default=None)
+    trigger_reason: str = Field(description="Reason for ending trigger")
 
-    # AI生成的结局叙事
-    narrative: str = Field(description="结局故事叙述")
+    # AI-generated ending narrative
+    narrative: str = Field(description="Ending story narrative")
     epilogue: Dict[str, str] = Field(
-        description="各国的后续发展",
+        description="Subsequent development of each country",
         default_factory=dict
     )
 
-    # 最终统计
+    # Final statistics
     final_stats: Dict[str, Any] = Field(
-        description="最终统计数据",
+        description="Final statistical data",
         default_factory=dict
     )
     key_events: List[str] = Field(
-        description="关键历史事件回顾",
+        description="Key historical events review",
         default_factory=list
     )
 
 
-# 预设Agent配置
+# Preset Agent configurations
 PRESET_AGENTS = {
     "GER": {
         "country_code": "GER",
-        "country_name": "德国",
+        "country_name": "Germany",
         "objectives": [
-            "占领波兰",
-            "避免两线作战",
-            "建立欧洲霸权"
+            "Occupy Poland",
+            "Avoid two-front war",
+            "Establish European hegemony"
         ],
         "personality": {
             "aggression": 0.8,
@@ -255,11 +255,11 @@ PRESET_AGENTS = {
     },
     "UK": {
         "country_code": "UK",
-        "country_name": "英国",
+        "country_name": "United Kingdom",
         "objectives": [
-            "保卫本土",
-            "维护海上霸权",
-            "阻止德国扩张"
+            "Defend the homeland",
+            "Maintain naval supremacy",
+            "Prevent German expansion"
         ],
         "personality": {
             "aggression": 0.4,
@@ -275,11 +275,11 @@ PRESET_AGENTS = {
     },
     "USSR": {
         "country_code": "USSR",
-        "country_name": "苏联",
+        "country_name": "Soviet Union",
         "objectives": [
-            "扩大领土",
-            "建立缓冲区",
-            "避免与德国冲突"
+            "Expand territory",
+            "Establish buffer zones",
+            "Avoid conflict with Germany"
         ],
         "personality": {
             "aggression": 0.6,
