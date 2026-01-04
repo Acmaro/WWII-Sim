@@ -1,5 +1,5 @@
 """
-AI驱动的结局生成服务
+AI-Driven Ending Generation Service
 """
 
 from typing import Dict, List
@@ -10,7 +10,7 @@ from backend.core.agent import WorldState, CountryAgent, GameEnding
 
 
 class EndingGenerator:
-    """结局生成器"""
+    """Ending generator"""
 
     def __init__(self, llm: BaseChatModel):
         self.llm = llm
@@ -22,21 +22,21 @@ class EndingGenerator:
         player_country: str
     ) -> GameEnding:
         """
-        基于当前世界状态生成游戏结局
+        Generate game ending based on current world state
 
         Args:
-            world_state: 当前世界状态
-            trigger_reason: 结局触发原因
-            player_country: 玩家控制的国家
+            world_state: Current world state
+            trigger_reason: Reason for ending trigger
+            player_country: Player-controlled country
 
         Returns:
-            GameEnding: 生成的结局数据
+            GameEnding: Generated ending data
         """
 
-        # 收集游戏状态信息
+        # Collect game state information
         game_summary = self._build_game_summary(world_state, player_country)
 
-        # 使用LLM生成结局叙事
+        # Use LLM to generate ending narrative
         narrative = self._generate_narrative(
             game_summary,
             trigger_reason,
@@ -44,20 +44,20 @@ class EndingGenerator:
             player_country
         )
 
-        # 生成各国后续发展
+        # Generate country epilogues
         epilogue = self._generate_epilogue(world_state, player_country)
 
-        # 确定结局类型和胜利者
+        # Determine ending type and winner
         ending_type, winner = self._determine_ending_type(
             world_state,
             trigger_reason,
             player_country
         )
 
-        # 收集关键事件
+        # Collect key events
         key_events = self._collect_key_events(world_state)
 
-        # 生成最终统计
+        # Build final statistics
         final_stats = self._build_final_stats(world_state)
 
         return GameEnding(
@@ -71,13 +71,13 @@ class EndingGenerator:
         )
 
     def _build_game_summary(self, world_state: WorldState, player_country: str) -> str:
-        """构建游戏摘要"""
+        """Build game summary"""
         summary_lines = [
-            f"游戏时间: {world_state.current_year}年{world_state.current_month}月",
-            f"总回合数: {world_state.current_turn}",
-            f"玩家国家: {player_country}",
+            f"Game Time: {world_state.current_year}/{world_state.current_month}",
+            f"Total Turns: {world_state.current_turn}",
+            f"Player Country: {player_country}",
             "",
-            "各国状态:"
+            "Country States:"
         ]
 
         for country, agent in world_state.agents.items():
@@ -86,23 +86,23 @@ class EndingGenerator:
                 f"  {agent.country_name} ({country}):"
             )
             summary_lines.append(
-                f"    军事: {resources.get('military', 100)}, "
-                f"经济: {resources.get('economic', 100)}, "
-                f"外交: {resources.get('diplomatic', 100)}"
+                f"    Military: {resources.get('military', 100)}, "
+                f"Economic: {resources.get('economic', 100)}, "
+                f"Diplomatic: {resources.get('diplomatic', 100)}"
             )
 
-            # 添加行动历史
+            # Add action history
             if agent.action_history:
-                recent_actions = agent.action_history[-3:]  # 最近3个行动
+                recent_actions = agent.action_history[-3:]  # Last 3 actions
                 summary_lines.append(
-                    f"    最近行动: {', '.join(recent_actions)}"
+                    f"    Recent Actions: {', '.join(recent_actions)}"
                 )
 
         summary_lines.append("")
-        summary_lines.append("外交关系:")
+        summary_lines.append("Diplomatic Relations:")
         for country1 in world_state.diplomatic_relations:
             for country2, value in world_state.diplomatic_relations[country1].items():
-                if country1 < country2:  # 避免重复
+                if country1 < country2:  # Avoid duplicates
                     agent1 = world_state.get_agent(country1)
                     agent2 = world_state.get_agent(country2)
                     summary_lines.append(
@@ -118,52 +118,52 @@ class EndingGenerator:
         world_state: WorldState,
         player_country: str
     ) -> str:
-        """使用LLM生成结局叙事"""
+        """Use LLM to generate ending narrative"""
 
         player_agent = world_state.get_agent(player_country)
 
-        # 分析玩家的战略特征
+        # Analyze player's strategic characteristics
         strategy_analysis = self._analyze_player_strategy(player_agent, world_state, player_country)
 
         prompt = ChatPromptTemplate.from_messages([
-            ("system", """你是一位历史小说家，擅长将二战历史改编成引人入胜的故事。
+            ("system", """You are a historical novelist skilled at adapting WWII history into captivating stories.
 
-请基于提供的游戏信息，创作一段精彩的历史叙事（600-900字）：
+Based on the provided game information, create an excellent historical narrative (600-900 words):
 
-**叙事结构：**
-1. **开篇**（10%）：简短回顾已发生的关键事件
-2. **主体**（70%）：重点描写从当前时点到战争结束的虚构历史进程
-   - 描绘各国接下来的命运走向
-   - 想象关键战役、会议、转折点
-   - 展现国际格局的演变
-3. **结尾**（20%）：战后世界新秩序和各国的长远命运
+**Narrative Structure:**
+1. **Opening** (10%): Briefly review key events that have occurred
+2. **Body** (70%): Focus on depicting the fictional historical process from the current point to the war's end
+   - Portray the fate of each nation going forward
+   - Imagine key battles, conferences, and turning points
+   - Show the evolution of the international landscape
+3. **Conclusion** (20%): The post-war world order and the long-term fate of nations
 
-**写作要求：**
-- 使用史诗叙事风格，像在讲述真实历史
-- 用国家名称，不要用"玩家"、"他"等代词
-- 不要使用"第X回合"、"选择了"等游戏术语
-- 不要简单列举发生了什么，而是讲述一个完整的故事
-- 描绘具体的场景、人物、事件
-- 重点在于**模拟未来**，而非复述过去
+**Writing Requirements:**
+- Use epic narrative style, as if recounting real history
+- Use country names, not pronouns like "the player" or "they"
+- Do not use game terminology like "Turn X" or "selected"
+- Don't simply list what happened, tell a complete story
+- Depict specific scenes, figures, and events
+- Focus on **simulating the future**, not recounting the past
 
-**禁止：**
-- "玩家选择了..."
-- "第一回合..."
-- "他们决定..."
-- 直接引用数据（"军事100"）
-- 流水账式叙述
+**Forbidden:**
+- "The player chose..."
+- "In the first turn..."
+- "They decided..."
+- Direct data quotes ("Military 100")
+- Chronicle-style narration
 
-**示例风格：**
-"1939年秋，欧洲的天空笼罩在战争的阴云之下。德意志帝国在占领波兰后，迅速将目光投向西欧...接下来的数年间，..."（而非"德国在第一回合选择了进攻波兰..."）"""),
-            ("human", """游戏背景信息：
+**Example Style:**
+"In the autumn of 1939, the skies over Europe were shrouded in the clouds of war. After occupying Poland, the German Empire swiftly turned its gaze toward Western Europe... In the following years..." (NOT "Germany chose to attack Poland in turn 1...")"""),
+            ("human", """Game Background Information:
 {game_summary}
 
-{player_name}的战略特征：
+{player_name}'s Strategic Characteristics:
 {strategy_analysis}
 
-结局触发：{trigger_reason}
+Ending Trigger: {trigger_reason}
 
-请创作一个完整的历史故事，重点描写从1939年到战争结束的历史进程，以及战后的世界格局。""")
+Please create a complete historical story, focusing on the historical process from 1939 to the war's end, and the post-war world order.""")
         ])
 
         chain = prompt | self.llm
@@ -183,39 +183,39 @@ class EndingGenerator:
         world_state: WorldState,
         country_code: str
     ) -> str:
-        """分析玩家的战略特征"""
+        """Analyze player's strategic characteristics"""
 
         analysis_lines = []
 
-        # 1. 行动历史分析
+        # 1. Action history analysis
         if agent.action_history:
             actions = agent.action_history
-            analysis_lines.append(f"总行动数：{len(actions)}")
+            analysis_lines.append(f"Total Actions: {len(actions)}")
 
-            # 统计行动类型
-            military_count = sum(1 for a in actions if any(k in a for k in ['军事', '进攻', '防御', '战争']))
-            diplomatic_count = sum(1 for a in actions if any(k in a for k in ['外交', '协议', '谈判', '联盟']))
-            economic_count = sum(1 for a in actions if any(k in a for k in ['经济', '生产', '工业', '资源']))
+            # Count action types
+            military_count = sum(1 for a in actions if any(k in a for k in ['军事', '进攻', '防御', '战争', 'Military', 'Attack', 'Defense', 'War']))
+            diplomatic_count = sum(1 for a in actions if any(k in a for k in ['外交', '协议', '谈判', '联盟', 'Diplomatic', 'Agreement', 'Negotiation', 'Alliance']))
+            economic_count = sum(1 for a in actions if any(k in a for k in ['经济', '生产', '工业', '资源', 'Economic', 'Production', 'Industry', 'Resource']))
 
-            analysis_lines.append(f"军事行动：{military_count}次")
-            analysis_lines.append(f"外交行动：{diplomatic_count}次")
-            analysis_lines.append(f"经济行动：{economic_count}次")
+            analysis_lines.append(f"Military Actions: {military_count}")
+            analysis_lines.append(f"Diplomatic Actions: {diplomatic_count}")
+            analysis_lines.append(f"Economic Actions: {economic_count}")
 
-            # 判断主导战略
+            # Determine dominant strategy
             if military_count > diplomatic_count and military_count > economic_count:
-                analysis_lines.append("主导战略：军事扩张路线")
+                analysis_lines.append("Dominant Strategy: Military Expansion")
             elif diplomatic_count > military_count and diplomatic_count > economic_count:
-                analysis_lines.append("主导战略：外交优先路线")
+                analysis_lines.append("Dominant Strategy: Diplomacy First")
             elif economic_count > military_count and economic_count > diplomatic_count:
-                analysis_lines.append("主导战略：经济发展路线")
+                analysis_lines.append("Dominant Strategy: Economic Development")
             else:
-                analysis_lines.append("主导战略：平衡发展路线")
+                analysis_lines.append("Dominant Strategy: Balanced Development")
 
-            # 最近的行动
+            # Recent actions
             recent = actions[-3:] if len(actions) >= 3 else actions
-            analysis_lines.append(f"最近行动：{', '.join(recent)}")
+            analysis_lines.append(f"Recent Actions: {', '.join(recent)}")
 
-        # 2. 外交状况
+        # 2. Diplomatic status
         allies = []
         enemies = []
         for other_country in world_state.agents.keys():
@@ -228,16 +228,16 @@ class EndingGenerator:
                     enemies.append(other_name)
 
         if allies:
-            analysis_lines.append(f"盟友关系：与{', '.join(allies)}建立了友好关系")
+            analysis_lines.append(f"Allied Relations: Established friendly relations with {', '.join(allies)}")
         if enemies:
-            analysis_lines.append(f"敌对关系：与{', '.join(enemies)}关系紧张")
+            analysis_lines.append(f"Hostile Relations: Tensions with {', '.join(enemies)}")
 
-        # 3. 资源状况（作为辅助）
+        # 3. Resource status (auxiliary)
         resources = agent.resources
         analysis_lines.append(
-            f"最终状态：军事{resources.get('military', 100)}, "
-            f"经济{resources.get('economic', 100)}, "
-            f"外交{resources.get('diplomatic', 100)}"
+            f"Final State: Military {resources.get('military', 100)}, "
+            f"Economic {resources.get('economic', 100)}, "
+            f"Diplomatic {resources.get('diplomatic', 100)}"
         )
 
         return "\n".join(analysis_lines)
@@ -247,12 +247,12 @@ class EndingGenerator:
         world_state: WorldState,
         player_country: str
     ) -> Dict[str, str]:
-        """生成各国的后续发展（使用LLM生成个性化内容）"""
+        """Generate country epilogues (using LLM to generate personalized content)"""
 
         epilogue = {}
 
         for country, agent in world_state.agents.items():
-            # 为每个国家生成个性化的后续发展
+            # Generate personalized epilogue for each country
             epilogue_text = self._generate_country_epilogue(
                 agent, world_state, country, country == player_country
             )
@@ -267,28 +267,28 @@ class EndingGenerator:
         country_code: str,
         is_player: bool
     ) -> str:
-        """为单个国家生成后续发展"""
+        """Generate epilogue for a single country"""
 
-        # 分析该国的特征
+        # Analyze country characteristics
         resources = agent.resources
         military = resources.get('military', 100)
         economic = resources.get('economic', 100)
 
-        # 分析行动历史
+        # Analyze action history
         action_summary = ""
         if agent.action_history:
-            military_count = sum(1 for a in agent.action_history if any(k in a for k in ['军事', '进攻', '防御', '战争']))
-            diplomatic_count = sum(1 for a in agent.action_history if any(k in a for k in ['外交', '协议', '谈判', '联盟']))
-            economic_count = sum(1 for a in agent.action_history if any(k in a for k in ['经济', '生产', '工业', '资源']))
+            military_count = sum(1 for a in agent.action_history if any(k in a for k in ['军事', '进攻', '防御', '战争', 'Military', 'Attack', 'Defense', 'War']))
+            diplomatic_count = sum(1 for a in agent.action_history if any(k in a for k in ['外交', '协议', '谈判', '联盟', 'Diplomatic', 'Agreement', 'Negotiation', 'Alliance']))
+            economic_count = sum(1 for a in agent.action_history if any(k in a for k in ['经济', '生产', '工业', '资源', 'Economic', 'Production', 'Industry', 'Resource']))
 
             if military_count > diplomatic_count and military_count > economic_count:
-                action_summary = "采取了军事扩张战略"
+                action_summary = "Pursued military expansion strategy"
             elif diplomatic_count > 0:
-                action_summary = "注重外交斡旋"
+                action_summary = "Focused on diplomatic maneuvering"
             elif economic_count > 0:
-                action_summary = "专注经济建设"
+                action_summary = "Concentrated on economic development"
 
-        # 外交关系
+        # Diplomatic relations
         allies = []
         enemies = []
         for other_country in world_state.agents.keys():
@@ -300,56 +300,56 @@ class EndingGenerator:
                 elif relation < -0.5:
                     enemies.append(other_name)
 
-        # 使用LLM生成个性化描述
+        # Use LLM to generate personalized description
         prompt = ChatPromptTemplate.from_messages([
-            ("system", """你是历史学家，专门撰写二战后各国的命运。
+            ("system", """You are a historian specializing in writing about the fate of nations after WWII.
 
-请用1-2句话（50-80字）描述这个国家战后的发展和命运。
+Please describe this country's post-war development and fate in 1-2 sentences (50-80 words).
 
-要求：
-- 基于该国在战争中的表现和最终状态
-- 描述要具体、生动，避免模板化
-- 不要使用"该国"、"这个国家"等代词，直接用国家名
-- 不要引用具体数值
-- 描绘长远影响（几十年的视角）"""),
-            ("human", """国家：{country_name}
+Requirements:
+- Based on the country's performance during the war and final state
+- Descriptions should be specific and vivid, avoid templates
+- Don't use pronouns like "this country", use the country name directly
+- Don't quote specific numbers
+- Depict long-term impact (from a decades-long perspective)"""),
+            ("human", """Country: {country_name}
 
-战争期间表现：{action_summary}
-最终军事状况：{military_status}
-最终经济状况：{economic_status}
-盟友关系：{allies}
-敌对关系：{enemies}
-是否为玩家国家：{is_player}
+Performance During War: {action_summary}
+Final Military Status: {military_status}
+Final Economic Status: {economic_status}
+Allied Relations: {allies}
+Hostile Relations: {enemies}
+Is Player Country: {is_player}
 
-请描述这个国家战后的命运和发展。""")
+Please describe this country's post-war fate and development.""")
         ])
 
-        # 判断状态
-        military_status = "强大" if military >= 120 else ("中等" if military >= 60 else "虚弱")
-        economic_status = "繁荣" if economic >= 120 else ("稳定" if economic >= 60 else "困难")
+        # Determine status
+        military_status = "Strong" if military >= 120 else ("Moderate" if military >= 60 else "Weak")
+        economic_status = "Prosperous" if economic >= 120 else ("Stable" if economic >= 60 else "Struggling")
 
         chain = prompt | self.llm
 
         try:
             response = chain.invoke({
                 "country_name": agent.country_name,
-                "action_summary": action_summary or "采取平衡发展策略",
+                "action_summary": action_summary or "Pursued balanced development strategy",
                 "military_status": military_status,
                 "economic_status": economic_status,
-                "allies": "、".join(allies) if allies else "无明显盟友",
-                "enemies": "、".join(enemies) if enemies else "无明显敌对",
-                "is_player": "是" if is_player else "否"
+                "allies": ", ".join(allies) if allies else "No clear allies",
+                "enemies": ", ".join(enemies) if enemies else "No clear enemies",
+                "is_player": "Yes" if is_player else "No"
             })
 
             return response.content.strip()
         except Exception as e:
-            # 如果LLM调用失败，使用简单的备用方案
+            # If LLM call fails, use simple fallback
             if military <= 20 or economic <= 20:
-                return f"{agent.country_name}在战后陷入长期重建，需要数十年才能恢复元气。"
+                return f"{agent.country_name} fell into a long post-war reconstruction, requiring decades to recover."
             elif military >= 150 and economic >= 150:
-                return f"{agent.country_name}成为战后的超级大国，主导了新的世界秩序。"
+                return f"{agent.country_name} became a post-war superpower, dominating the new world order."
             else:
-                return f"{agent.country_name}在战后走上了复兴之路，逐步恢复国力。"
+                return f"{agent.country_name} embarked on a path of revival, gradually restoring its national strength."
 
     def _determine_ending_type(
         self,
@@ -358,28 +358,28 @@ class EndingGenerator:
         player_country: str
     ) -> tuple[str, str]:
         """
-        确定结局类型和胜利者
+        Determine ending type and winner
 
-        综合考虑：
-        1. 资源状态（但不是唯一标准）
-        2. 外交关系网络
-        3. 行动历史（战略选择）
-        4. 回合结果趋势
+        Considers:
+        1. Resource status (but not the only criterion)
+        2. Diplomatic relationship network
+        3. Action history (strategic choices)
+        4. Turn result trends
         """
 
         player_agent = world_state.get_agent(player_country)
 
-        # 检查是否有国家完全崩溃（明确的失败）
+        # Check if any country has completely collapsed (clear defeat)
         for country, agent in world_state.agents.items():
             if agent.resources.get('military', 100) <= 0 or agent.resources.get('economic', 100) <= 0:
                 if country == player_country:
                     return "defeat", None
-                # 即使敌国崩溃，也不一定算胜利，要看整体情况
+                # Even if enemy country collapses, not necessarily a victory - depends on overall situation
 
-        # 评估玩家的战略得分
+        # Evaluate player's strategic score
         player_score = self._calculate_strategic_score(player_agent, world_state, player_country)
 
-        # 评估其他国家的平均得分
+        # Evaluate average score of other countries
         other_scores = []
         for country, agent in world_state.agents.items():
             if country != player_country:
@@ -388,10 +388,10 @@ class EndingGenerator:
 
         avg_other_score = sum(other_scores) / len(other_scores) if other_scores else 0
 
-        print(f"[结局判断] 玩家战略得分: {player_score:.1f}")
-        print(f"[结局判断] 其他国家平均得分: {avg_other_score:.1f}")
+        print(f"[Ending Determination] Player strategic score: {player_score:.1f}")
+        print(f"[Ending Determination] Other countries average score: {avg_other_score:.1f}")
 
-        # 基于战略得分判断结局
+        # Determine ending based on strategic score
         score_diff = player_score - avg_other_score
 
         if score_diff > 15:
@@ -408,27 +408,27 @@ class EndingGenerator:
         country_code: str
     ) -> float:
         """
-        计算战略得分（0-100）
+        Calculate strategic score (0-100)
 
-        考虑多个维度：
-        - 资源平衡性（30分）
-        - 外交关系（25分）
-        - 战略一致性（25分）
-        - 行动多样性（20分）
+        Considers multiple dimensions:
+        - Resource balance (30 points)
+        - Diplomatic relations (25 points)
+        - Strategic consistency (25 points)
+        - Action diversity (20 points)
         """
         score = 0.0
 
-        # 1. 资源平衡性（30分）- 不只看总量，还看平衡
+        # 1. Resource balance (30 points) - not just total, but balance
         resources = agent.resources
         military = resources.get('military', 100)
         economic = resources.get('economic', 100)
         diplomatic = resources.get('diplomatic', 100)
 
-        # 资源总量（15分）
+        # Total resources (15 points)
         total_resources = military + economic + diplomatic
         score += min(15, total_resources / 20)
 
-        # 资源平衡性（15分）- 三项都不能太低
+        # Resource balance (15 points) - none should be too low
         min_resource = min(military, economic, diplomatic)
         if min_resource >= 80:
             score += 15
@@ -437,7 +437,7 @@ class EndingGenerator:
         elif min_resource >= 40:
             score += 5
 
-        # 2. 外交关系（25分）
+        # 2. Diplomatic relations (25 points)
         diplomatic_score = 0
         relation_count = 0
 
@@ -446,54 +446,54 @@ class EndingGenerator:
                 relation = world_state.get_relation(country_code, other_country)
                 relation_count += 1
 
-                # 正面关系加分，负面关系减分
+                # Positive relations add points, negative subtract
                 if relation > 0.5:
-                    diplomatic_score += 15  # 强盟友
+                    diplomatic_score += 15  # Strong ally
                 elif relation > 0:
-                    diplomatic_score += 8   # 友好
+                    diplomatic_score += 8   # Friendly
                 elif relation > -0.5:
-                    diplomatic_score += 0   # 中立
+                    diplomatic_score += 0   # Neutral
                 else:
-                    diplomatic_score -= 5   # 敌对
+                    diplomatic_score -= 5   # Hostile
 
         if relation_count > 0:
             score += min(25, max(0, diplomatic_score / relation_count * 25))
 
-        # 3. 战略一致性（25分）- 分析行动历史
+        # 3. Strategic consistency (25 points) - analyze action history
         if agent.action_history:
             actions = agent.action_history
 
-            # 统计行动类型分布
+            # Count action type distribution
             action_types = {}
             for action in actions:
-                # 简单判断行动类型（基于关键词）
-                if any(keyword in action for keyword in ['军事', '进攻', '防御', '部队', '战争']):
+                # Simple action type judgment (based on keywords)
+                if any(keyword in action for keyword in ['军事', '进攻', '防御', '部队', '战争', 'Military', 'Attack', 'Defense', 'Troops', 'War']):
                     action_types['military'] = action_types.get('military', 0) + 1
-                elif any(keyword in action for keyword in ['外交', '协议', '谈判', '联盟', '关系']):
+                elif any(keyword in action for keyword in ['外交', '协议', '谈判', '联盟', '关系', 'Diplomatic', 'Agreement', 'Negotiation', 'Alliance', 'Relations']):
                     action_types['diplomatic'] = action_types.get('diplomatic', 0) + 1
-                elif any(keyword in action for keyword in ['经济', '生产', '工业', '资源', '贸易']):
+                elif any(keyword in action for keyword in ['经济', '生产', '工业', '资源', '贸易', 'Economic', 'Production', 'Industry', 'Resource', 'Trade']):
                     action_types['economic'] = action_types.get('economic', 0) + 1
 
             total_actions = len(actions)
             if total_actions > 0:
-                # 有明确战略方向（某一类型占主导但不是全部）加分
+                # Clear strategic direction (one type dominant but not all) adds points
                 if action_types:
                     max_type_count = max(action_types.values())
                     max_ratio = max_type_count / total_actions
 
-                    if 0.4 <= max_ratio <= 0.7:  # 有主导战略但也有灵活性
+                    if 0.4 <= max_ratio <= 0.7:  # Dominant strategy but also flexible
                         score += 20
                     elif 0.3 <= max_ratio < 0.4 or 0.7 < max_ratio <= 0.8:
                         score += 12
                     else:
-                        score += 5  # 过于分散或过于单一
+                        score += 5  # Too scattered or too uniform
                 else:
                     score += 5
 
-                # 行动数量加分（更活跃）
+                # Action quantity bonus (more active)
                 score += min(5, total_actions / 2)
 
-        # 4. 行动多样性（20分）- 不重复单一策略
+        # 4. Action diversity (20 points) - not repeating single strategy
         if agent.action_history:
             unique_actions = len(set(agent.action_history))
             diversity_ratio = unique_actions / len(agent.action_history)
@@ -502,11 +502,11 @@ class EndingGenerator:
         return min(100, score)
 
     def _collect_key_events(self, world_state: WorldState) -> List[str]:
-        """收集关键历史事件"""
+        """Collect key historical events"""
         key_events = []
 
-        # 从所有Agent的行动历史中提取（混合时间顺序）
-        # 收集每个国家的所有行动
+        # Extract from all Agent action histories (mixed chronological order)
+        # Collect all actions from each country
         all_actions = []
         for country, agent in world_state.agents.items():
             if agent.action_history:
@@ -514,36 +514,36 @@ class EndingGenerator:
                     all_actions.append({
                         'country': agent.country_name,
                         'action': action,
-                        'turn': i + 1  # 估计回合数
+                        'turn': i + 1  # Estimated turn number
                     })
 
-        # 按回合排序（时间顺序）
+        # Sort by turn (chronological order)
         all_actions.sort(key=lambda x: x['turn'])
 
-        # 选择最重要的事件（优先军事和外交）
+        # Select most important events (prioritize military and diplomatic)
         important_actions = []
         for action_info in all_actions:
             action = action_info['action']
-            # 军事和外交行动优先
-            if any(keyword in action for keyword in ['军事', '进攻', '防御', '战争', '外交', '协议', '联盟']):
+            # Military and diplomatic actions priority
+            if any(keyword in action for keyword in ['军事', '进攻', '防御', '战争', '外交', '协议', '联盟', 'Military', 'Attack', 'Defense', 'War', 'Diplomatic', 'Agreement', 'Alliance']):
                 important_actions.append(action_info)
-            elif len(important_actions) < 10:  # 确保至少有一些事件
+            elif len(important_actions) < 10:  # Ensure at least some events
                 important_actions.append(action_info)
 
-        # 限制数量，选择最多8个关键事件
+        # Limit quantity, select at most 8 key events
         important_actions = important_actions[:8]
 
-        # 格式化为字符串
+        # Format as strings
         for action_info in important_actions:
-            key_events.append(f"{action_info['country']}：{action_info['action']}")
+            key_events.append(f"{action_info['country']}: {action_info['action']}")
 
         return key_events
 
     def _build_final_stats(self, world_state: WorldState) -> Dict[str, any]:
-        """构建最终统计数据"""
+        """Build final statistics"""
         stats = {
             "total_turns": world_state.current_turn,
-            "end_date": f"{world_state.current_year}年{world_state.current_month}月",
+            "end_date": f"{world_state.current_year}/{world_state.current_month}",
             "countries": {}
         }
 
