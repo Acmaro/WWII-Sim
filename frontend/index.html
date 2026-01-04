@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>交互式二战历史推演</title>
+    <title>Interactive WWII Historical Simulation</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         * {
@@ -664,82 +664,82 @@
     </style>
 </head>
 <body>
-    <!-- 国家选择界面 -->
+    <!-- Country Selection Interface -->
     <div id="countrySelection" class="country-selection-overlay">
         <div class="country-selection-panel">
-            <h2>🌍 选择你的国家</h2>
-            <p>选择一个国家开始你的二战历史推演之旅</p>
+            <h2>🌍 Choose Your Country</h2>
+            <p>Select a country to begin your WWII historical simulation journey</p>
 
             <div class="country-options">
                 <div class="country-card" data-country="GER" onclick="selectCountry('GER')">
                     <div class="flag">🦅</div>
-                    <h3>德国</h3>
-                    <div class="alliance">轴心国</div>
-                    <div class="description">指挥德国国防军，征服欧洲，改变历史</div>
+                    <h3>Germany</h3>
+                    <div class="alliance">Axis</div>
+                    <div class="description">Command the Wehrmacht, conquer Europe, change history</div>
                 </div>
 
                 <div class="country-card" data-country="UK" onclick="selectCountry('UK')">
                     <div class="flag">🦁</div>
-                    <h3>英国</h3>
-                    <div class="alliance">盟军</div>
-                    <div class="description">领导大英帝国，捍卫自由世界</div>
+                    <h3>United Kingdom</h3>
+                    <div class="alliance">Allies</div>
+                    <div class="description">Lead the British Empire, defend the free world</div>
                 </div>
 
                 <div class="country-card" data-country="USSR" onclick="selectCountry('USSR')">
                     <div class="flag">⭐</div>
-                    <h3>苏联</h3>
-                    <div class="alliance">盟军</div>
-                    <div class="description">统率红军，保卫祖国，反击侵略</div>
+                    <h3>Soviet Union</h3>
+                    <div class="alliance">Allies</div>
+                    <div class="description">Command the Red Army, defend the Motherland, counter aggression</div>
                 </div>
             </div>
 
             <button id="startGameBtn" class="start-game-btn" disabled onclick="startGame()">
-                开始游戏
+                Start Game
             </button>
         </div>
     </div>
 
     <div class="container">
         <header>
-            <h1>🎖️ 交互式二战历史推演</h1>
-            <p class="subtitle">选择分支，创造属于你的平行历史</p>
+            <h1>🎖️ Interactive WWII Historical Simulation</h1>
+            <p class="subtitle">Choose branches, create your own parallel history</p>
         </header>
 
         <div class="main-content">
-            <!-- 顶部横条：玩家国家信息 -->
+            <!-- Top Bar: Player Country Info -->
             <div id="playerInfo" class="panel player-info player-info-panel" style="display: none;">
-                <span class="label">你正在扮演：</span>
+                <span class="label">You are playing as:</span>
                 <span class="flag" id="playerFlag">🦅</span>
-                <span class="country-name" id="playerCountryName">德国</span>
+                <span class="country-name" id="playerCountryName">Germany</span>
             </div>
 
-            <!-- 左侧：战略选项 -->
+            <!-- Left: Strategic Options -->
             <div class="panel branches-wrapper">
-                <h2 style="color: #667eea;">🎯 战略选项</h2>
+                <h2 style="color: #667eea;">🎯 Strategic Options</h2>
                 <div id="branchesContainer" class="branches-container">
-                    <button class="btn" onclick="generateBranches()">生成战略选项</button>
+                    <button class="btn" onclick="generateBranches()">Generate Strategic Options</button>
                 </div>
             </div>
 
-            <!-- 中间：时间线可视化 -->
+            <!-- Center: Timeline Visualization -->
             <div class="panel timeline-wrapper">
-                <h2 style="color: #667eea;">📊 历史时间线</h2>
+                <h2 style="color: #667eea;">📊 Historical Timeline</h2>
                 <div id="timeline" class="timeline-container"></div>
             </div>
 
-            <!-- 右侧：行动结果 + 各国状态 -->
+            <!-- Right: Action Result + Country States -->
             <div class="right-sidebar">
-                <!-- 行动结果 -->
+                <!-- Action Result -->
                 <div id="actionResultPanel" class="panel action-result-panel" style="display: none;">
-                    <h2 style="color: #667eea;">🎲 行动结果</h2>
+                    <h2 style="color: #667eea;">🎲 Action Result</h2>
                     <div id="actionResultContent"></div>
                 </div>
 
-                <!-- 各国状态 -->
+                <!-- Country States -->
                 <div class="panel country-states-panel-wrapper">
-                    <h2 style="color: #667eea;">🌍 各国状态</h2>
+                    <h2 style="color: #667eea;">🌍 Country States</h2>
                     <div id="countryBuffsList">
-                        <p class="no-buffs">加载中...</p>
+                        <p class="no-buffs">Loading...</p>
                     </div>
                 </div>
             </div>
@@ -747,16 +747,16 @@
     </div>
 
     <script>
-        // 全局状态
+        // Global state
         let sessionId = null;
         let historyTree = null;
         let currentNodeId = 'root';
-        let worldState = null;  // 国家状态
-        let playerCountry = null;  // 玩家选择的国家
-        let playerCountryInfo = null;  // 玩家国家详细信息
+        let worldState = null;  // Country states
+        let playerCountry = null;  // Player's selected country
+        let playerCountryInfo = null;  // Player country details
         const API_BASE = 'http://localhost:8000';
 
-        // 国家配置
+        // Country configuration
         const COUNTRY_FLAGS = {
             'GER': '🦅',
             'UK': '🦁',
@@ -767,40 +767,40 @@
             'WORLD': '🌍'
         };
 
-        // 国家选择
+        // Country selection
         let selectedCountry = null;
 
         function selectCountry(country) {
-            // 移除所有选中状态
+            // Remove all selected states
             document.querySelectorAll('.country-card').forEach(card => {
                 card.classList.remove('selected');
             });
 
-            // 添加选中状态
+            // Add selected state
             document.querySelector(`.country-card[data-country="${country}"]`).classList.add('selected');
             selectedCountry = country;
 
-            // 启用开始按钮
+            // Enable start button
             document.getElementById('startGameBtn').disabled = false;
 
-            console.log('选择国家:', country);
+            console.log('Selected country:', country);
         }
 
         async function startGame() {
             if (!selectedCountry) {
-                alert('请先选择一个国家');
+                alert('Please select a country first');
                 return;
             }
 
-            // 隐藏国家选择界面
+            // Hide country selection interface
             document.getElementById('countrySelection').style.display = 'none';
 
-            // 初始化游戏
+            // Initialize game
             await init(selectedCountry);
         }
 
-        // ⭐ 加载提示工具函数
-        function showLoading(containerId, message = '正在生成...') {
+        // Loading indicator utility function
+        function showLoading(containerId, message = 'Generating...') {
             const container = document.getElementById(containerId);
             container.style.position = 'relative';
             const overlay = document.createElement('div');
@@ -821,7 +821,7 @@
             }
         }
 
-        // 初始化游戏
+        // Initialize game
         async function init(country) {
             try {
                 const response = await fetch(`${API_BASE}/api/start`, {
@@ -848,18 +848,18 @@
 
                 currentNodeId = 'root';
 
-                console.log('✅ 会话已创建:', sessionId);
-                console.log('✅ 玩家国家:', playerCountryInfo.name);
+                console.log('✅ Session created:', sessionId);
+                console.log('✅ Player country:', playerCountryInfo.name);
 
-                // 显示玩家国家信息
+                // Display player country info
                 document.getElementById('playerInfo').style.display = 'block';
                 document.getElementById('playerFlag').textContent = COUNTRY_FLAGS[playerCountry] || '🌍';
                 document.getElementById('playerCountryName').textContent = playerCountryInfo.name;
 
-                // 隐藏行动结果面板
+                // Hide action result panel
                 document.getElementById('actionResultPanel').style.display = 'none';
 
-                // ⭐ 初始化国家状态显示
+                // Initialize country states display
                 if (data.world_state) {
                     updateCountryStates(data.world_state);
                 }
@@ -867,22 +867,22 @@
                 updateCurrentNode();
                 updateVisualization();
 
-                // ⭐ 自动生成第一批分支
+                // Auto-generate first batch of branches
                 setTimeout(() => {
                     generateBranches();
                 }, 500);
 
             } catch (error) {
-                console.error('❌ 初始化失败:', error);
-                alert('无法连接到服务器，请确保后端正在运行 (python backend/api_server.py)');
+                console.error('❌ Initialization failed:', error);
+                alert('Cannot connect to server. Please ensure backend is running (python backend/api_server.py)');
             }
         }
 
-        // 生成分支选项
+        // Generate branch options
         async function generateBranches() {
             const container = document.getElementById('branchesContainer');
-            container.innerHTML = '';  // 清空内容
-            showLoading('branchesContainer', '⚙️ AI正在分析局势并生成选项...');
+            container.innerHTML = '';  // Clear content
+            showLoading('branchesContainer', '⚙️ AI is analyzing the situation and generating options...');
 
             try {
                 const response = await fetch(`${API_BASE}/api/branches`, {
@@ -896,70 +896,70 @@
 
                 const data = await response.json();
 
-                console.log('✅ 收到分支数据:', data.branches);
+                console.log('✅ Received branch data:', data.branches);
 
-                // ⭐ 更新国家状态
+                // Update country states
                 if (data.world_state) {
                     updateCountryStates(data.world_state);
                 }
 
-                // ⚠️ 关键1：更新父节点（包含children_ids）
+                // Key 1: Update parent node (including children_ids)
                 if (data.updated_parent) {
-                    console.log('更新父节点:', data.updated_parent.id, 'children:', data.updated_parent.children_ids);
+                    console.log('Update parent node:', data.updated_parent.id, 'children:', data.updated_parent.children_ids);
                     historyTree.nodes[data.updated_parent.id] = data.updated_parent;
                 }
 
-                // ⚠️ 关键2：立即将分支节点添加到historyTree
+                // Key 2: Immediately add branch nodes to historyTree
                 data.branches.forEach(branch => {
-                    console.log('添加分支节点到树:', branch.id, branch.name);
+                    console.log('Add branch node to tree:', branch.id, branch.name);
                     historyTree.nodes[branch.id] = branch;
                 });
 
-                // ⭐ 关键3：将分支链接到当前节点
+                // Key 3: Link branches to current node
                 const currentNode = historyTree.nodes[currentNodeId];
                 if (currentNode) {
                     if (!currentNode.children_ids) {
                         currentNode.children_ids = [];
                     }
-                    // 添加所有新分支
+                    // Add all new branches
                     data.branches.forEach(branch => {
                         if (!currentNode.children_ids.includes(branch.id)) {
                             currentNode.children_ids.push(branch.id);
-                            console.log(`✅ 链接 ${currentNodeId} -> ${branch.id}`);
+                            console.log(`✅ Link ${currentNodeId} -> ${branch.id}`);
                         }
                     });
                 }
 
-                // ⭐ 隐藏加载动画
+                // Hide loading animation
                 hideLoading('branchesContainer');
 
-                // 显示分支选项
+                // Display branch options
                 displayBranches(data.branches);
 
-                // ⚠️ 关键3：立即更新可视化
-                console.log('准备更新可视化，当前节点数:', Object.keys(historyTree.nodes).length);
+                // Key 3: Immediately update visualization
+                console.log('Preparing to update visualization, current node count:', Object.keys(historyTree.nodes).length);
                 updateVisualization();
 
             } catch (error) {
-                console.error('❌ 生成分支失败:', error);
+                console.error('❌ Branch generation failed:', error);
                 hideLoading('branchesContainer');
-                container.innerHTML = '<p style="color: red;">生成失败，请重试</p>';
+                container.innerHTML = '<p style="color: red;">Generation failed, please retry</p>';
             }
         }
 
-        // 显示行动结果（在独立面板中）
+        // Display action result (in dedicated panel)
         function displayActionResult(actionResult) {
             const panel = document.getElementById('actionResultPanel');
             const content = document.getElementById('actionResultContent');
 
-            // 显示面板
+            // Show panel
             panel.style.display = 'block';
 
-            // 结果样式
+            // Result styling
             const outcomeColors = {
-                '完全成功': '#28a745',
-                '部分成功': '#ffc107',
-                '失败': '#dc3545'
+                'Complete Success': '#28a745',
+                'Partial Success': '#ffc107',
+                'Failure': '#dc3545'
             };
             const outcomeColor = outcomeColors[actionResult.outcome] || '#ffc107';
             const successScore = (actionResult.success_score * 100).toFixed(0);
@@ -999,7 +999,7 @@
                     </div>
                     ${actionResult.impacts && actionResult.impacts.length > 0 ? `
                         <div style="margin-top: 10px;">
-                            <strong style="font-size: 0.9em;">🌍 对各国影响：</strong>
+                            <strong style="font-size: 0.9em;">🌍 Impact on Countries:</strong>
                             <ul style="margin: 5px 0 0 0; padding-left: 20px; font-size: 0.9em;">
                                 ${actionResult.impacts.map(impact => `
                                     <li>${COUNTRY_FLAGS[impact.country] || '🌍'} ${impact.effect} <span style="color: #666;">(${impact.severity})</span></li>
@@ -1010,37 +1010,37 @@
                 </div>
             `;
 
-            // 在选项区显示等待提示
+            // Show waiting message in options area
             const branchesContainer = document.getElementById('branchesContainer');
-            branchesContainer.innerHTML = '<div class="loading">正在生成各国反应...</div>';
+            branchesContainer.innerHTML = '<div class="loading">Generating country reactions...</div>';
         }
 
-        // 显示分支选项
+        // Display branch options
         function displayBranches(branches) {
             const container = document.getElementById('branchesContainer');
-            container.innerHTML = '<h3 style="color: #667eea; margin-bottom: 15px;">🎯 选择你的行动</h3>';
+            container.innerHTML = '<h3 style="color: #667eea; margin-bottom: 15px;">🎯 Choose Your Action</h3>';
 
             branches.forEach(branch => {
                 const div = document.createElement('div');
                 div.className = 'branch-option';
 
-                // 风险等级样式
-                const riskLevel = branch.risk_level || '中';
-                const riskColors = {'低': '#28a745', '中': '#ffc107', '高': '#dc3545'};
+                // Risk level styling
+                const riskLevel = branch.risk_level || 'Medium';
+                const riskColors = {'Low': '#28a745', 'Medium': '#ffc107', 'High': '#dc3545'};
                 const riskColor = riskColors[riskLevel] || '#ffc107';
 
-                // 时间消耗
+                // Time cost
                 const monthsDuration = branch.months_duration || 2;
-                const timeInfo = `<span class="time-cost">⏱️ ${monthsDuration}个月</span>`;
+                const timeInfo = `<span class="time-cost">⏱️ ${monthsDuration} months</span>`;
 
                 div.innerHTML = `
                     <h4>${branch.name}</h4>
                     <p class="description">${branch.description}</p>
                     <div style="display: flex; gap: 10px; margin-top: 8px; align-items: center;">
-                        <span class="likelihood">成功率: ${(branch.likelihood * 100).toFixed(0)}%</span>
+                        <span class="likelihood">Likelihood: ${(branch.likelihood * 100).toFixed(0)}%</span>
                         ${timeInfo}
                         <span class="risk-badge" style="background-color: ${riskColor};">
-                            风险: ${riskLevel}
+                            Risk: ${riskLevel}
                         </span>
                     </div>
                 `;
@@ -1049,11 +1049,11 @@
             });
         }
 
-        // 选择分支
+        // Choose branch
         async function chooseBranch(branchId) {
             const container = document.getElementById('branchesContainer');
             container.innerHTML = '';
-            showLoading('branchesContainer', '🎲 AI正在评估行动结果...');
+            showLoading('branchesContainer', '🎲 AI is evaluating action results...');
 
             try {
                 const response = await fetch(`${API_BASE}/api/choose`, {
@@ -1067,32 +1067,32 @@
                 });
 
                 const data = await response.json();
-                console.log('📦 收到响应:', response.status, data);
+                console.log('📦 Received response:', response.status, data);
 
                 if (data.success) {
-                    console.log('✅ 行动执行完成，收到数据:', data);
+                    console.log('✅ Action execution completed, received data:', data);
 
-                    // ⭐ 重要：先将选择的分支节点加入路径
+                    // Important: First add selected branch node to path
                     if (!historyTree.path.includes(branchId)) {
                         historyTree.path.push(branchId);
-                        console.log(`✅ 分支节点 ${branchId} 加入路径`);
+                        console.log(`✅ Branch node ${branchId} added to path`);
                     }
 
-                    // ⭐ 显示行动结果
+                    // Display action result
                     if (data.action_result) {
                         displayActionResult(data.action_result);
                     }
 
-                    // ⭐ 更新国家状态
+                    // Update country states
                     if (data.world_state) {
                         updateCountryStates(data.world_state);
                     }
 
-                    // 更新历史树 - 添加结果节点和反应节点
+                    // Update history tree - add result node and reaction nodes
                     if (data.result_node) {
                         historyTree.nodes[data.result_node.id] = data.result_node;
 
-                        // ⭐ 重要：更新行动节点的 children_ids
+                        // Important: Update action node's children_ids
                         const actionNode = historyTree.nodes[branchId];
                         if (actionNode) {
                             if (!actionNode.children_ids) {
@@ -1100,7 +1100,7 @@
                             }
                             if (!actionNode.children_ids.includes(data.result_node.id)) {
                                 actionNode.children_ids.push(data.result_node.id);
-                                console.log(`✅ 链接 ${branchId} -> ${data.result_node.id}`);
+                                console.log(`✅ Link ${branchId} -> ${data.result_node.id}`);
                             }
                         }
 
@@ -1109,14 +1109,14 @@
                         }
                     }
 
-                    // 添加反应节点
+                    // Add reaction nodes
                     let lastParentId = data.result_node?.id || branchId;
                     if (data.reaction_nodes && data.reaction_nodes.length > 0) {
                         data.reaction_nodes.forEach((node, index) => {
-                            console.log('添加反应节点:', node.id, node.name);
+                            console.log('Add reaction node:', node.id, node.name);
                             historyTree.nodes[node.id] = node;
 
-                            // 更新父节点的children_ids
+                            // Update parent node's children_ids
                             if (!historyTree.nodes[lastParentId].children_ids) {
                                 historyTree.nodes[lastParentId].children_ids = [];
                             }
@@ -1135,45 +1135,45 @@
                     currentNodeId = data.current_node;
                     historyTree.current_node = currentNodeId;
 
-                    console.log('更新后的路径:', historyTree.path);
-                    console.log('当前节点:', currentNodeId);
+                    console.log('Updated path:', historyTree.path);
+                    console.log('Current node:', currentNodeId);
 
-                    // 更新界面
+                    // Update interface
                     updateCurrentNode();
                     updateHistoryPath();
                     updateVisualization();
 
-                    // ⭐ 自动生成下一组分支（延迟1.5秒，让用户看到结果）
-                    // 先隐藏加载动画
+                    // Auto-generate next batch of branches (delayed 1.5s to let user see result)
+                    // First hide loading animation
                     hideLoading('branchesContainer');
 
                     setTimeout(() => {
                         generateBranches();
                     }, 1500);
                 } else {
-                    console.error('❌ 响应中 success=false，完整数据:', data);
-                    throw new Error(data.error || data.message || '未知错误');
+                    console.error('❌ Response has success=false, full data:', data);
+                    throw new Error(data.error || data.message || 'Unknown error');
                 }
 
             } catch (error) {
-                console.error('❌ 选择分支失败:', error);
+                console.error('❌ Branch selection failed:', error);
                 hideLoading('branchesContainer');
-                container.innerHTML = '<p style="color: red;">选择失败，请重试</p>';
+                container.innerHTML = '<p style="color: red;">Selection failed, please retry</p>';
             }
         }
 
-        // 更新当前节点显示
+        // Update current node display
         function updateCurrentNode() {
             const node = historyTree.nodes[currentNodeId];
             const container = document.getElementById('currentNode');
 
-            // 如果元素不存在（已被移除），跳过更新
+            // If element doesn't exist (already removed), skip update
             if (!container) {
-                console.log('📍 当前位置面板不存在，跳过更新');
+                console.log('📍 Current position panel doesn\'t exist, skipping update');
                 return;
             }
 
-            const monthStr = node.month ? `年${node.month}月` : '年';
+            const monthStr = node.month ? ` ${node.month}` : '';
 
             container.innerHTML = `
                 <div class="year">${node.year}${monthStr}</div>
@@ -1182,14 +1182,14 @@
             `;
         }
 
-        // 更新历史路径
+        // Update history path
         function updateHistoryPath() {
             const container = document.getElementById('historyPath');
             const pathList = document.getElementById('pathList');
 
-            // 如果元素不存在（已被移除），跳过更新
+            // If element doesn't exist (already removed), skip update
             if (!container || !pathList) {
-                console.log('📜 历史路径面板不存在，跳过更新');
+                console.log('📜 History path panel doesn\'t exist, skipping update');
                 return;
             }
 
@@ -1200,7 +1200,7 @@
                 const node = historyTree.nodes[nodeId];
                 const div = document.createElement('div');
                 div.className = 'path-item';
-                const monthStr = node.month ? `年${node.month}月` : '年';
+                const monthStr = node.month ? ` ${node.month}` : '';
                 div.innerHTML = `
                     <span class="year">${node.year}${monthStr}</span> - ${node.name}
                 `;
@@ -1208,19 +1208,19 @@
             });
         }
 
-        // 更新国家状态显示
+        // Update country states display
         function updateCountryStates(world_state_data) {
             worldState = world_state_data;
             const container = document.getElementById('countryBuffsList');
 
             if (!worldState || !worldState.countries) {
-                container.innerHTML = '<p class="no-buffs">暂无数据</p>';
+                container.innerHTML = '<p class="no-buffs">No data available</p>';
                 return;
             }
 
             container.innerHTML = '';
 
-            // 按buff数量排序（有buff的国家优先）
+            // Sort by buff count (countries with buffs first)
             const sortedCountries = Object.entries(worldState.countries)
                 .sort((a, b) => b[1].buffs.length - a[1].buffs.length);
 
@@ -1229,16 +1229,16 @@
                     const countryDiv = document.createElement('div');
                     countryDiv.className = 'country-item';
 
-                    // 构建国家头部
+                    // Build country header
                     const headerDiv = document.createElement('div');
                     headerDiv.className = 'country-header';
                     headerDiv.innerHTML = `
                         <span class="country-name">${country.country_name}</span>
-                        <span class="country-alliance">${country.alliance || '中立'}</span>
+                        <span class="country-alliance">${country.alliance || 'Neutral'}</span>
                     `;
                     countryDiv.appendChild(headerDiv);
 
-                    // 构建buff容器
+                    // Build buff container
                     const buffsDiv = document.createElement('div');
                     buffsDiv.className = 'buffs-container';
 
@@ -1250,7 +1250,7 @@
                         const strengthSymbol = buff.effect === 'positive' ? '+' :
                                               buff.effect === 'negative' ? '-' : '';
                         const durationText = buff.duration > 0 ?
-                            `<span class="buff-duration">(${buff.duration}月)</span>` : '';
+                            `<span class="buff-duration">(${buff.duration} months)</span>` : '';
 
                         buffTag.innerHTML = `
                             ${buff.name}
@@ -1263,13 +1263,13 @@
 
                     countryDiv.appendChild(buffsDiv);
 
-                    // 添加总强度信息（可选）
+                    // Add overall strength info (optional)
                     if (country.total_strength) {
                         const strengthDiv = document.createElement('div');
                         strengthDiv.className = 'country-strength';
                         const overall = country.total_strength.overall;
                         const symbol = overall > 0 ? '+' : overall < 0 ? '-' : '±';
-                        strengthDiv.innerHTML = `综合实力: ${symbol}${Math.abs(overall)}`;
+                        strengthDiv.innerHTML = `Overall Strength: ${symbol}${Math.abs(overall)}`;
                         countryDiv.appendChild(strengthDiv);
                     }
 
@@ -1277,21 +1277,21 @@
                 }
             });
 
-            // 如果没有国家有buff
+            // If no countries have buffs
             if (container.children.length === 0) {
-                container.innerHTML = '<p class="no-buffs">暂无活跃buff</p>';
+                container.innerHTML = '<p class="no-buffs">No active buffs</p>';
             }
 
-            console.log('✅ 国家状态已更新');
+            console.log('✅ Country states updated');
         }
 
-        // 保存缩放状态的全局变量
+        // Global variables for saving zoom state
         let savedZoomTransform = null;
         let isFirstRender = true;
 
-        // D3可视化（带缩放功能）
+        // D3 visualization (with zoom functionality)
         function updateVisualization() {
-            console.log('🎨 更新可视化...', {
+            console.log('🎨 Updating visualization...', {
                 nodes: Object.keys(historyTree.nodes).length,
                 path: historyTree.path.length,
                 current: currentNodeId
@@ -1299,88 +1299,88 @@
 
             const container = document.getElementById('timeline');
 
-            // ⚠️ 保存当前缩放状态（如果存在）
+            // Save current zoom state (if exists)
             const oldSvg = d3.select('#timeline svg');
             if (!oldSvg.empty() && !isFirstRender) {
                 const zoomNode = oldSvg.node();
                 if (zoomNode.__zoom) {
                     savedZoomTransform = zoomNode.__zoom;
-                    console.log('💾 保存缩放状态:', savedZoomTransform);
+                    console.log('💾 Save zoom state:', savedZoomTransform);
                 }
             }
 
-            // 完全清空容器
+            // Completely clear container
             d3.select('#timeline').selectAll('*').remove();
 
             const width = container.clientWidth;
             const height = 600;
 
-            // 创建SVG
+            // Create SVG
             const svg = d3.select('#timeline')
                 .append('svg')
                 .attr('width', width)
                 .attr('height', height);
 
-            // 构建树结构
+            // Build tree structure
             const root = buildTreeData();
 
             if (!root) {
-                console.error('❌ 树数据构建失败');
+                console.error('❌ Tree data build failed');
                 return;
             }
 
-            console.log('✅ 树数据构建成功', root);
+            console.log('✅ Tree data built successfully', root);
 
-            // ⭐ 使用标准树布局
+            // Use standard tree layout
             const treeData = d3.hierarchy(root);
 
-            // 计算树的尺寸（根据节点数动态调整）
+            // Calculate tree dimensions (dynamically adjusted based on node count)
             const nodeCount = treeData.descendants().length;
             const treeHeight = Math.max(500, nodeCount * 60);
             const treeWidth = Math.max(800, treeData.height * 250);
 
-            // 创建树布局
+            // Create tree layout
             const treeLayout = d3.tree()
                 .size([treeHeight, treeWidth - 200])
                 .separation((a, b) => {
-                    // 增加兄弟节点间距
+                    // Increase sibling node spacing
                     return a.parent === b.parent ? 1.5 : 2;
                 });
 
-            // 应用树布局
+            // Apply tree layout
             treeLayout(treeData);
 
             const nodes = treeData.descendants();
             const links = treeData.links();
 
-            // 创建可缩放的组
+            // Create zoomable group
             const g = svg.append('g');
 
-            // ⭐ 添加缩放功能
+            // Add zoom functionality
             const zoom = d3.zoom()
-                .scaleExtent([0.1, 3])  // 缩放范围：10% - 300%
+                .scaleExtent([0.1, 3])  // Zoom range: 10% - 300%
                 .on('zoom', (event) => {
                     g.attr('transform', event.transform);
                 });
 
             svg.call(zoom);
 
-            // ⚠️ 恢复之前的缩放状态，或设置初始位置
+            // Restore previous zoom state, or set initial position
             if (savedZoomTransform && !isFirstRender) {
-                // 有保存的状态，但要检查是否需要聚焦到新节点
-                // 先恢复状态，稍后会判断是否需要聚焦
+                // Has saved state, but check if need to focus on new node
+                // Restore state first, will determine if focus is needed later
                 svg.call(zoom.transform, savedZoomTransform);
-                console.log('🔄 恢复缩放状态:', savedZoomTransform);
+                console.log('🔄 Restore zoom state:', savedZoomTransform);
             } else {
-                // 仅第一次渲染时设置初始位置
+                // Only set initial position on first render
                 const initialX = 100;
                 const initialY = height / 2;
                 svg.call(zoom.transform, d3.zoomIdentity.translate(initialX, initialY - treeHeight / 2));
-                console.log('🎯 设置初始缩放位置');
+                console.log('🎯 Set initial zoom position');
                 isFirstRender = false;
             }
 
-            // 绘制连线
+            // Draw links
             g.selectAll('.link')
                 .data(links)
                 .enter()
@@ -1393,9 +1393,9 @@
                     .x(d => d.y)
                     .y(d => d.x));
 
-            console.log('✅ 绘制了', links.length, '条连线');
+            console.log('✅ Drew', links.length, 'links');
 
-            // 绘制节点
+            // Draw nodes
             const nodeElements = g.selectAll('.node')
                 .data(nodes)
                 .enter()
@@ -1412,7 +1412,7 @@
             nodeElements.append('circle')
                 .attr('r', 8);
 
-            // 年月标签
+            // Year/month labels
             nodeElements.append('text')
                 .attr('dy', -15)
                 .attr('text-anchor', 'middle')
@@ -1422,14 +1422,14 @@
                     return `${d.data.year}${monthStr}`;
                 });
 
-            // 事件名称（支持多行换行）
+            // Event names (support multi-line wrapping)
             nodeElements.each(function(d) {
                 const text = d3.select(this).append('text')
                     .attr('text-anchor', 'middle')
                     .style('font-size', '11px')
                     .style('font-weight', 'normal');
 
-                // 将文本分成多行（每行最多6个字符）
+                // Split text into multiple lines (max 6 characters per line)
                 const name = d.data.name;
                 const maxCharsPerLine = 6;
                 const lines = [];
@@ -1438,18 +1438,18 @@
                     lines.push(name.substring(i, i + maxCharsPerLine));
                 }
 
-                // 添加每一行
+                // Add each line
                 lines.forEach((line, i) => {
                     text.append('tspan')
                         .attr('x', 0)
-                        .attr('dy', i === 0 ? 20 : 12)  // 第一行dy=20，后续行dy=12
+                        .attr('dy', i === 0 ? 20 : 12)  // First line dy=20, subsequent lines dy=12
                         .text(line);
                 });
             });
 
-            console.log('✅ 绘制了', nodeElements.size(), '个节点');
+            console.log('✅ Drew', nodeElements.size(), 'nodes');
 
-            // ⭐ 自动聚焦到当前节点
+            // Auto-focus on current node
             const currentNode = treeData.descendants().find(d => d.data.id === currentNodeId);
             if (currentNode && !isFirstRender) {
                 const scale = savedZoomTransform ? savedZoomTransform.k : 1;
@@ -1460,43 +1460,43 @@
                     .duration(750)
                     .call(zoom.transform, d3.zoomIdentity.translate(x, y).scale(scale));
 
-                console.log('🎯 自动聚焦到节点:', currentNodeId, {x: currentNode.y, y: currentNode.x});
+                console.log('🎯 Auto-focus on node:', currentNodeId, {x: currentNode.y, y: currentNode.x});
             }
 
-            // 添加缩放提示
+            // Add zoom tip
             if (nodeCount > 5) {
                 svg.append('text')
                     .attr('x', 10)
                     .attr('y', 20)
                     .style('font-size', '12px')
                     .style('fill', '#667eea')
-                    .text('💡 使用鼠标滚轮缩放，拖拽移动');
+                    .text('💡 Use mouse wheel to zoom, drag to move');
             }
         }
 
-        // 构建树数据结构
+        // Build tree data structure
         function buildTreeData() {
             const rootNode = historyTree.nodes['root'];
             if (!rootNode) {
-                console.error('❌ Root节点不存在');
+                console.error('❌ Root node doesn\'t exist');
                 return null;
             }
 
             function buildNode(nodeId, depth = 0) {
                 const node = historyTree.nodes[nodeId];
                 if (!node) {
-                    console.warn(`⚠️ 节点 ${nodeId} 不存在 (深度${depth})`);
+                    console.warn(`⚠️ Node ${nodeId} doesn't exist (depth ${depth})`);
                     return null;
                 }
 
-                console.log(`  ${'  '.repeat(depth)}构建节点: ${nodeId} - ${node.name} (${node.year}.${node.month})`);
+                console.log(`  ${'  '.repeat(depth)}Build node: ${nodeId} - ${node.name} (${node.year}.${node.month})`);
 
                 const children = (node.children_ids || [])
                     .map(childId => buildNode(childId, depth + 1))
                     .filter(child => child !== null);
 
                 if (children.length > 0) {
-                    console.log(`  ${'  '.repeat(depth)}└─ ${children.length}个子节点`);
+                    console.log(`  ${'  '.repeat(depth)}└─ ${children.length} child nodes`);
                 }
 
                 return {
@@ -1509,14 +1509,14 @@
                 };
             }
 
-            console.log('🌳 开始构建树结构...');
+            console.log('🌳 Start building tree structure...');
             const tree = buildNode('root');
-            console.log('🌳 树结构构建完成');
+            console.log('🌳 Tree structure build complete');
             return tree;
         }
 
-        // 不再自动初始化，等待用户选择国家
-        // window.onload = init; 已移除
+        // No longer auto-initialize, wait for user to select country
+        // window.onload = init; removed
     </script>
 </body>
 </html>
