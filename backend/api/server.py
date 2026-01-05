@@ -1,7 +1,7 @@
 """
-FastAPI服务器
+FastAPI Server
 
-提供RESTful API接口
+Provides RESTful API interface
 """
 
 from fastapi import FastAPI, HTTPException
@@ -22,111 +22,111 @@ from backend.services.knowledge_base import get_knowledge_base
 
 
 # ============================================================================
-# 全局状态
+# Global State
 # ============================================================================
 
-# 游戏会话存储
+# Game session storage
 sessions: Dict[str, GameSession] = {}
 
-# 知识库和工作流
+# Knowledge base and workflow
 knowledge_base = None
 event_workflow = None
 
 
 # ============================================================================
-# 生命周期管理
+# Lifecycle Management
 # ============================================================================
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """应用生命周期管理"""
+    """Application lifecycle management"""
     global knowledge_base, event_workflow
 
-    # 启动时初始化
+    # Initialize on startup
     print("="*70)
-    print("初始化WWIISim-v2服务器...")
+    print("Initializing WWIISim-v2 server...")
     print("="*70)
 
     try:
-        # 初始化知识库
-        print("\n1. 加载知识库...")
+        # Initialize knowledge base
+        print("\n1. Loading knowledge base...")
         try:
             knowledge_base = get_knowledge_base()
             stats = knowledge_base.get_stats()
-            print(f"   [OK] 加载了 {stats['total_events']} 个历史事件")
-            print(f"   [OK] 向量维度: {stats['vector_dimension']}")
+            print(f"   [OK] Loaded {stats['total_events']} historical events")
+            print(f"   [OK] Vector dimension: {stats['vector_dimension']}")
         except Exception as kb_error:
-            print(f"   [WARNING] 知识库加载失败: {kb_error}")
-            print("   [WARNING] 将在无RAG模式下运行")
+            print(f"   [WARNING] Knowledge base loading failed: {kb_error}")
+            print("   [WARNING] Running in non-RAG mode")
             knowledge_base = None
 
-        # 初始化工作流
-        print("\n2. 初始化事件生成工作流...")
+        # Initialize workflow
+        print("\n2. Initializing event generation workflow...")
         event_workflow = create_event_generation_workflow(knowledge_base)
-        print("   [OK] LangGraph工作流已就绪")
+        print("   [OK] LangGraph workflow ready")
 
         print("\n" + "="*70)
-        print("[SUCCESS] 服务器初始化完成!")
-        print(f"API地址: http://{settings.API_HOST}:{settings.API_PORT}")
+        print("[SUCCESS] Server initialization complete!")
+        print(f"API address: http://{settings.API_HOST}:{settings.API_PORT}")
         if knowledge_base is None:
-            print("[WARNING] RAG功能已禁用（知识库未加载）")
+            print("[WARNING] RAG features disabled (knowledge base not loaded)")
         print("="*70 + "\n")
 
     except Exception as e:
-        print(f"\n[ERROR] 初始化失败: {e}")
+        print(f"\n[ERROR] Initialization failed: {e}")
         import traceback
         traceback.print_exc()
 
     yield
 
-    # 关闭时清理
-    print("\n服务器关闭中...")
+    # Cleanup on shutdown
+    print("\nServer shutting down...")
 
 
 # ============================================================================
-# 创建FastAPI应用
+# Create FastAPI Application
 # ============================================================================
 
 app = FastAPI(
     title="WWII Simulation API v2",
-    description="基于LangGraph和LangChain的二战模拟游戏API",
+    description="WWII simulation game API based on LangGraph and LangChain",
     version="2.0.0",
     lifespan=lifespan
 )
 
-# 配置CORS
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 允许所有源
-    allow_credentials=False,  # 使用通配符源时必须为False
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=False,  # Must be False when using wildcard origin
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
 # ============================================================================
-# API端点
+# API Endpoints
 # ============================================================================
 
 @app.get("/")
 async def root():
-    """根端点"""
+    """Root endpoint"""
     return {
         "name": "WWII Simulation API v2",
         "version": "2.0.0",
         "status": "running",
         "features": [
-            "LangGraph智能工作流",
-            "Pydantic类型安全",
-            "自动迭代优化",
-            "RAG知识检索"
+            "LangGraph intelligent workflow",
+            "Pydantic type safety",
+            "Automatic iterative optimization",
+            "RAG knowledge retrieval"
         ]
     }
 
 
 @app.get("/health")
 async def health_check():
-    """健康检查"""
+    """Health check"""
     return {
         "status": "healthy",
         "knowledge_base": knowledge_base is not None,
@@ -138,19 +138,19 @@ async def health_check():
 @app.post("/api/start", response_model=StartGameResponse)
 async def start_game(request: StartGameRequest):
     """
-    开始新游戏
+    Start new game
 
-    创建游戏会话并返回初始事件
+    Create game session and return initial event
     """
     try:
-        # 创建会话ID
+        # Create session ID
         session_id = str(uuid.uuid4())
 
-        # 创建初始事件
+        # Create initial event
         start_event = GameEvent(
             id=f"start_{request.player_country}",
-            name=f"{request.player_country}国家的战争开端时刻",
-            description="1939年9月1日，第二次世界大战正式爆发，全世界陷入战火之中。作为国家的最高决策者，你将引导这个国家在战争的洪流中前进，每一个决策都将影响国家的命运和历史的走向。",
+            name=f"The Dawn of War for {request.player_country}",
+            description="On September 1, 1939, World War II officially began, plunging the entire world into the flames of war. As the supreme decision-maker of your nation, you will guide this country through the torrents of war, where every decision will affect the fate of the nation and the course of history.",
             year=settings.GAME_START_YEAR,
             month=settings.GAME_START_MONTH,
             country=request.player_country,
@@ -159,7 +159,7 @@ async def start_game(request: StartGameRequest):
             impact_score=0
         )
 
-        # 创建会话
+        # Create session
         session = GameSession(
             session_id=session_id,
             player_country=request.player_country,
@@ -169,40 +169,40 @@ async def start_game(request: StartGameRequest):
             history=[start_event]
         )
 
-        # 保存会话
+        # Save session
         sessions[session_id] = session
 
         return StartGameResponse(
             session_id=session_id,
             start_node=start_event,
             player_country=request.player_country,
-            country_info={},  # TODO: 添加国家详细信息
-            message=f"游戏开始！你将扮演{request.player_country}的决策者"
+            country_info={},  # TODO: Add detailed country information
+            message=f"Game started! You will play as the decision-maker of {request.player_country}"
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"启动游戏失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to start game: {str(e)}")
 
 
 @app.post("/api/branches", response_model=GetBranchesResponse)
 async def get_branches(request: GetBranchesRequest):
     """
-    获取分支选项
+    Get branch options
 
-    使用LangGraph工作流生成事件分支
+    Use LangGraph workflow to generate event branches
     """
-    # 验证会话
+    # Validate session
     if request.session_id not in sessions:
-        raise HTTPException(status_code=404, detail="会话不存在")
+        raise HTTPException(status_code=404, detail="Session not found")
 
     session = sessions[request.session_id]
 
     try:
-        # 构建历史摘要
+        # Build history summary
         history_summary = _build_history_summary(session.history)
 
-        # 使用LangGraph工作流生成分支
-        print(f"\n生成分支: {session.player_country} {session.current_year}.{session.current_month}")
+        # Use LangGraph workflow to generate branches
+        print(f"\nGenerating branches: {session.player_country} {session.current_year}.{session.current_month}")
 
         branch_options = event_workflow.generate(
             country=session.player_country,
@@ -212,58 +212,58 @@ async def get_branches(request: GetBranchesRequest):
         )
 
         if branch_options is None:
-            raise HTTPException(status_code=500, detail="生成失败")
+            raise HTTPException(status_code=500, detail="Generation failed")
 
-        # 显示生成元数据
+        # Display generation metadata
         metadata = branch_options.generation_metadata
         if metadata:
-            print(f"   迭代次数: {metadata.get('iterations', 0)}")
-            print(f"   质量评分: {metadata.get('quality_score', 0):.1%}")
+            print(f"   Iterations: {metadata.get('iterations', 0)}")
+            print(f"   Quality score: {metadata.get('quality_score', 0):.1%}")
 
         return GetBranchesResponse(
             branches=branch_options.branches,
-            ending_probability=0.0,  # TODO: 实现战争积分系统
+            ending_probability=0.0,  # TODO: Implement war point system
             is_ended=False
         )
 
     except Exception as e:
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"生成分支失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate branches: {str(e)}")
 
 
 @app.post("/api/choose")
 async def make_choice(request: MakeChoiceRequest):
     """
-    做出选择
+    Make choice
 
-    记录玩家选择并更新游戏状态
+    Record player choice and update game state
     """
-    # 验证会话
+    # Validate session
     if request.session_id not in sessions:
-        raise HTTPException(status_code=404, detail="会话不存在")
+        raise HTTPException(status_code=404, detail="Session not found")
 
     session = sessions[request.session_id]
 
     try:
-        # TODO: 验证choice_id有效性
+        # TODO: Validate choice_id validity
 
-        # 更新状态
+        # Update state
         session.current_node_id = request.choice_id
 
-        # 推进时间（简化版）
+        # Advance time (simplified version)
         session.current_month += 1
         if session.current_month > 12:
             session.current_month = 1
             session.current_year += 1
 
-        # TODO: 添加选择的事件到历史
+        # TODO: Add chosen event to history
 
-        # 创建结果节点
+        # Create result node
         result_node = GameEvent(
             id=f"result_{request.choice_id}_{session.current_year}_{session.current_month}",
-            name=f"{session.player_country}的行动结果",
-            description=f"你选择的行动已经开始执行。{session.player_country}的决策者们正在全力推进这一战略方针，后续的影响将逐步显现。国际局势也在随之发生微妙的变化。",
+            name=f"Action Result for {session.player_country}",
+            description=f"Your chosen action has begun execution. Decision-makers of {session.player_country} are fully pursuing this strategic policy, and subsequent effects will gradually emerge. The international situation is also undergoing subtle changes.",
             year=session.current_year,
             month=session.current_month,
             country=session.player_country,
@@ -277,16 +277,16 @@ async def make_choice(request: MakeChoiceRequest):
             "current_node": result_node.id,
             "result_node": result_node.model_dump(),
             "action_result": {
-                "outcome": "完全成功",
-                "result_description": f"你选择的行动已经开始执行。{session.player_country}正在全力推进这一战略方针。",
+                "outcome": "Complete success",
+                "result_description": f"Your chosen action has begun execution. {session.player_country} is fully pursuing this strategic policy.",
                 "success_score": 0.85,
                 "consequences": [
-                    "国际关系发生微妙变化",
-                    "国内舆论对此决策反应积极"
+                    "International relations undergo subtle changes",
+                    "Domestic public opinion reacts positively to this decision"
                 ],
                 "impacts": [
-                    {"country": session.player_country, "effect": "国内士气提升", "severity": "中等"},
-                    {"country": "ALL", "effect": "国际关系发生微妙变化", "severity": "轻微"}
+                    {"country": session.player_country, "effect": "Domestic morale boosted", "severity": "Moderate"},
+                    {"country": "ALL", "effect": "International relations undergo subtle changes", "severity": "Minor"}
                 ],
                 "impact": {
                     "military": 5,
@@ -296,18 +296,18 @@ async def make_choice(request: MakeChoiceRequest):
             },
             "reaction_nodes": [],
             "world_state": {},
-            "message": "选择成功"
+            "message": "Choice successful"
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"选择失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Choice failed: {str(e)}")
 
 
 @app.get("/api/status")
 async def get_status(session_id: str):
-    """获取游戏状态"""
+    """Get game status"""
     if session_id not in sessions:
-        raise HTTPException(status_code=404, detail="会话不存在")
+        raise HTTPException(status_code=404, detail="Session not found")
 
     session = sessions[session_id]
 
@@ -323,23 +323,23 @@ async def get_status(session_id: str):
 
 @app.get("/api/kb/stats")
 async def get_kb_stats():
-    """获取知识库统计信息"""
+    """Get knowledge base statistics"""
     if knowledge_base is None:
-        raise HTTPException(status_code=503, detail="知识库未初始化")
+        raise HTTPException(status_code=503, detail="Knowledge base not initialized")
 
     return knowledge_base.get_stats()
 
 
 # ============================================================================
-# 辅助函数
+# Utility Functions
 # ============================================================================
 
 def _build_history_summary(history: list[GameEvent]) -> str:
-    """构建历史摘要"""
+    """Build history summary"""
     if not history:
-        return "游戏开始"
+        return "Game start"
 
-    # 取最近3个事件
+    # Take the most recent 3 events
     recent = history[-3:]
     parts = []
 
@@ -352,7 +352,7 @@ def _build_history_summary(history: list[GameEvent]) -> str:
 
 
 # ============================================================================
-# 运行服务器
+# Run Server
 # ============================================================================
 
 if __name__ == "__main__":
