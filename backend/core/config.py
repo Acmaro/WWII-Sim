@@ -1,7 +1,7 @@
 """
-配置管理
+Configuration Management
 
-集中管理所有配置项，支持环境变量覆盖
+Centralized management of all configuration items, supports environment variable override
 """
 
 from pydantic_settings import BaseSettings
@@ -9,90 +9,90 @@ from typing import Optional
 
 
 class Settings(BaseSettings):
-    """应用配置"""
+    """Application configuration"""
 
     # ========================================================================
-    # LLM配置
+    # LLM Configuration
     # ========================================================================
 
-    # OpenAI配置
+    # OpenAI configuration
     OPENAI_API_KEY: Optional[str] = None
     OPENAI_API_BASE: Optional[str] = None
     OPENAI_MODEL: str = "gpt-4o"
     OPENAI_TEMPERATURE: float = 0.6
     OPENAI_MAX_TOKENS: int = 2000
 
-    # LM Studio配置（本地LLM）
+    # LM Studio configuration (local LLM)
     LM_STUDIO_BASE_URL: str = "http://localhost:11434"
     LM_STUDIO_MODEL: str = "qwen2.5:14b"
     LM_STUDIO_TEMPERATURE: float = 0.6
 
-    # LLM提供商选择
-    LLM_PROVIDER: str = "lm_studio"  # "openai" 或 "lm_studio"
+    # LLM provider selection
+    LLM_PROVIDER: str = "lm_studio"  # "openai" or "lm_studio"
 
     # ========================================================================
-    # Embedding配置
+    # Embedding Configuration
     # ========================================================================
 
     EMBEDDING_MODEL: str = "nomic-embed-text"
     EMBEDDING_DIMENSION: int = 768
-    EMBEDDING_PROVIDER: str = "ollama"  # "openai" 或 "ollama"
+    EMBEDDING_PROVIDER: str = "ollama"  # "openai" or "ollama"
     EMBEDDING_BASE_URL: str = "http://localhost:11434"
 
     # ========================================================================
-    # FAISS配置
+    # FAISS Configuration
     # ========================================================================
 
     FAISS_INDEX_PATH: str = "data/faiss_index"
     FAISS_USE_GPU: bool = False
 
     # ========================================================================
-    # 游戏配置
+    # Game Configuration
     # ========================================================================
 
-    # 国家配置
+    # Country configuration
     AVAILABLE_COUNTRIES: list[str] = ["GER", "UK", "USSR", "USA", "JAP", "FRA", "ITA"]
     DEFAULT_COUNTRY: str = "GER"
 
-    # 时间配置
+    # Time configuration
     GAME_START_YEAR: int = 1939
     GAME_START_MONTH: int = 9
     GAME_END_YEAR: int = 1945
     GAME_END_MONTH: int = 8
 
-    # 生成配置
+    # Generation configuration
     NUM_BRANCHES: int = 4
     MAX_GENERATION_RETRIES: int = 3
     QUALITY_THRESHOLD: float = 0.85
 
     # ========================================================================
-    # 性能配置
+    # Performance Configuration
     # ========================================================================
 
-    # 缓存配置
+    # Cache configuration
     ENABLE_CACHE: bool = True
     CACHE_SIZE: int = 1000
-    CACHE_TTL: int = 3600  # 秒
+    CACHE_TTL: int = 3600  # seconds
 
-    # 批处理配置
+    # Batch processing configuration
     BATCH_SIZE: int = 32
 
-    # 并发配置
+    # Concurrency configuration
     MAX_CONCURRENT_REQUESTS: int = 10
 
     # ========================================================================
-    # API配置
+    # API Configuration
     # ========================================================================
 
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000
     API_RELOAD: bool = True
 
-    # CORS配置
+    # CORS configuration
     CORS_ORIGINS: list[str] = ["http://localhost:5500", "http://127.0.0.1:5500"]
 
     # ========================================================================
-    # 数据路径
+    # Data Paths
     # ========================================================================
 
     DATA_DIR: str = "data"
@@ -100,7 +100,7 @@ class Settings(BaseSettings):
     COUNTRY_TEMPLATES_DIR: str = "data/countries"
 
     # ========================================================================
-    # 日志配置
+    # Logging Configuration
     # ========================================================================
 
     LOG_LEVEL: str = "INFO"
@@ -108,7 +108,7 @@ class Settings(BaseSettings):
     VERBOSE: bool = False
 
     # ========================================================================
-    # LangSmith配置（可选）
+    # LangSmith Configuration (optional)
     # ========================================================================
 
     LANGCHAIN_TRACING_V2: str = "false"
@@ -122,23 +122,23 @@ class Settings(BaseSettings):
         case_sensitive = True
 
 
-# 创建全局配置实例
+# Create global configuration instance
 settings = Settings()
 
 
 # ============================================================================
-# 常量定义
+# Constant Definitions
 # ============================================================================
 
-# 国家阵营
+# Country factions
 ALLIED_COUNTRIES = ["UK", "USA", "USSR", "FRA"]
 AXIS_COUNTRIES = ["GER", "JAP", "ITA"]
-NEUTRAL_COUNTRIES = []  # 可扩展
+NEUTRAL_COUNTRIES = []  # Extensible
 
-# 事件类型
+# Event types
 EVENT_TYPES = ["military", "diplomatic", "economic", "political"]
 
-# 质量评分权重
+# Quality score weights
 QUALITY_WEIGHTS = {
     "format_valid": 0.3,
     "diversity": 0.25,
@@ -146,10 +146,10 @@ QUALITY_WEIGHTS = {
     "historical_accuracy": 0.2
 }
 
-# LLM定价（用于成本计算，单位：$/1K tokens）
+# LLM pricing (for cost calculation, unit: $/1K tokens)
 LLM_PRICING = {
     "gpt-4o": {"prompt": 0.005, "completion": 0.015},
     "gpt-4-turbo": {"prompt": 0.01, "completion": 0.03},
     "gpt-3.5-turbo": {"prompt": 0.0005, "completion": 0.0015},
-    "lm_studio": {"prompt": 0.0, "completion": 0.0}  # 本地免费
+    "lm_studio": {"prompt": 0.0, "completion": 0.0}  # Local, free
 }
