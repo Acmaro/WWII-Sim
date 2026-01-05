@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WWII多Agent模拟 - 三国博弈</title>
+    <title>WWII Multi-Agent Simulation</title>
     <style>
         * {
             margin: 0;
@@ -388,36 +388,36 @@
     </style>
 </head>
 <body>
-    <!-- 国家选择界面 -->
+    <!-- Country Selection Screen -->
     <div id="countrySelection" class="country-selection">
-        <h2>🌍 选择你的国家</h2>
+        <h2>🌍 Choose Your Country</h2>
         <div class="country-cards">
             <div class="country-card" data-country="GER" onclick="selectCountry('GER')">
                 <div class="country-flag">🦅</div>
-                <h3>德国</h3>
-                <p>激进扩张<br>强大军力<br>寻求霸权</p>
+                <h3>Germany</h3>
+                <p>Aggressive Expansion<br>Strong Military<br>Seeking Hegemony</p>
             </div>
             <div class="country-card" data-country="UK" onclick="selectCountry('UK')">
                 <div class="country-flag">🦁</div>
-                <h3>英国</h3>
-                <p>海上霸主<br>外交强国<br>防御为主</p>
+                <h3>United Kingdom</h3>
+                <p>Naval Power<br>Diplomatic Leader<br>Defensive Strategy</p>
             </div>
             <div class="country-card" data-country="USSR" onclick="selectCountry('USSR')">
                 <div class="country-flag">⭐</div>
-                <h3>苏联</h3>
-                <p>红色巨人<br>工业大国<br>平衡发展</p>
+                <h3>Soviet Union</h3>
+                <p>Red Giant<br>Industrial Power<br>Balanced Development</p>
             </div>
         </div>
-        <button id="startGameBtn" class="start-btn" disabled onclick="startGame()">开始游戏</button>
+        <button id="startGameBtn" class="start-btn" disabled onclick="startGame()">Start Game</button>
     </div>
 
-    <!-- 主游戏界面 -->
+    <!-- Main Game Interface -->
     <div id="gameInterface" class="container hidden">
         <header>
-            <h1>🎖️ 二战多Agent模拟 - 三国博弈</h1>
+            <h1>🎖️ WWII Multi-Agent Simulation</h1>
             <div class="turn-info">
-                <span id="turnNumber">回合 1</span> -
-                <span id="currentDate">1939年9月</span>
+                <span id="turnNumber">Turn 1</span> -
+                <span id="currentDate">September 1939</span>
             </div>
         </header>
 
@@ -427,21 +427,21 @@
             <div id="panel-GER" class="agent-panel">
                 <div class="panel-header">
                     <div class="panel-title">
-                        <span>🦅 德国</span>
+                        <span>🦅 Germany</span>
                         <span id="badge-GER" class="control-badge"></span>
                     </div>
                 </div>
                 <div class="resources">
                     <div class="resource-item">
-                        <div class="resource-label">⚔️ 军事</div>
+                        <div class="resource-label">⚔️ Military</div>
                         <div id="military-GER" class="resource-value">100</div>
                     </div>
                     <div class="resource-item">
-                        <div class="resource-label">💰 经济</div>
+                        <div class="resource-label">💰 Economic</div>
                         <div id="economic-GER" class="resource-value">80</div>
                     </div>
                     <div class="resource-item">
-                        <div class="resource-label">🤝 外交</div>
+                        <div class="resource-label">🤝 Diplomatic</div>
                         <div id="diplomatic-GER" class="resource-value">50</div>
                     </div>
                 </div>
@@ -452,21 +452,21 @@
             <div id="panel-UK" class="agent-panel">
                 <div class="panel-header">
                     <div class="panel-title">
-                        <span>🦁 英国</span>
+                        <span>🦁 United Kingdom</span>
                         <span id="badge-UK" class="control-badge"></span>
                     </div>
                 </div>
                 <div class="resources">
                     <div class="resource-item">
-                        <div class="resource-label">⚔️ 军事</div>
+                        <div class="resource-label">⚔️ Military</div>
                         <div id="military-UK" class="resource-value">90</div>
                     </div>
                     <div class="resource-item">
-                        <div class="resource-label">💰 经济</div>
+                        <div class="resource-label">💰 Economic</div>
                         <div id="economic-UK" class="resource-value">100</div>
                     </div>
                     <div class="resource-item">
-                        <div class="resource-label">🤝 外交</div>
+                        <div class="resource-label">🤝 Diplomatic</div>
                         <div id="diplomatic-UK" class="resource-value">80</div>
                     </div>
                 </div>
@@ -477,21 +477,21 @@
             <div id="panel-USSR" class="agent-panel">
                 <div class="panel-header">
                     <div class="panel-title">
-                        <span>⭐ 苏联</span>
+                        <span>⭐ Soviet Union</span>
                         <span id="badge-USSR" class="control-badge"></span>
                     </div>
                 </div>
                 <div class="resources">
                     <div class="resource-item">
-                        <div class="resource-label">⚔️ 军事</div>
+                        <div class="resource-label">⚔️ Military</div>
                         <div id="military-USSR" class="resource-value">110</div>
                     </div>
                     <div class="resource-item">
-                        <div class="resource-label">💰 经济</div>
+                        <div class="resource-label">💰 Economic</div>
                         <div id="economic-USSR" class="resource-value">70</div>
                     </div>
                     <div class="resource-item">
-                        <div class="resource-label">🤝 外交</div>
+                        <div class="resource-label">🤝 Diplomatic</div>
                         <div id="diplomatic-USSR" class="resource-value">60</div>
                     </div>
                 </div>
@@ -499,18 +499,18 @@
             </div>
         </div>
 
-        <!-- 确认按钮 -->
+        <!-- Confirm Button -->
         <div style="text-align: center; margin-top: 20px; display: flex; justify-content: center; gap: 20px;">
             <button id="confirmBtn" class="btn btn-primary" disabled onclick="confirmChoice()">
-                确认选择并继续
+                Confirm Choice and Continue
             </button>
-            <button id="endingBtn" class="btn" onclick="if(confirm('确定要结束游戏并查看结局吗？\\n游戏将无法继续。')) generateEnding()"
+            <button id="endingBtn" class="btn" onclick="if(confirm('Are you sure you want to end the game and view the ending?\\nThe game cannot be continued.')) generateEnding()"
                     style="background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%); box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);">
-                🏁 查看结局
+                🏁 View Ending
             </button>
         </div>
 
-        <!-- 回合结果 -->
+        <!-- Turn Results -->
         <div id="turnResult" class="turn-result-panel hidden"></div>
     </div>
 
