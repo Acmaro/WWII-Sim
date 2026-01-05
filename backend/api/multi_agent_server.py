@@ -1,5 +1,5 @@
 """
-多Agent游戏API服务器
+Multi-Agent Game API Server
 """
 
 from fastapi import FastAPI, HTTPException
@@ -24,7 +24,7 @@ from backend.services.ending_generator import EndingGenerator
 
 
 # ============================================================================
-# 全局状态
+# Global State
 # ============================================================================
 
 multi_agent_sessions: Dict[str, Dict] = {}
@@ -35,16 +35,16 @@ ending_generator = None
 
 
 # ============================================================================
-# 请求/响应模型
+# Request/Response Models
 # ============================================================================
 
 class MultiAgentStartRequest(BaseModel):
-    """启动多Agent游戏请求"""
+    """Multi-agent game start request"""
     player_country: Literal["GER", "UK", "USSR"]
 
 
 class MultiAgentStartResponse(BaseModel):
-    """启动多Agent游戏响应"""
+    """Multi-agent game start response"""
     session_id: str
     world_state: WorldState
     player_agent: CountryAgent
@@ -53,12 +53,12 @@ class MultiAgentStartResponse(BaseModel):
 
 
 class ExecuteTurnRequest(BaseModel):
-    """执行回合请求"""
+    """Execute turn request"""
     session_id: str
 
 
 class ExecuteTurnResponse(BaseModel):
-    """执行回合响应"""
+    """Execute turn response"""
     turn_number: int
     phase: TurnPhase
     agent_options: Dict[str, List[GameEvent]]  # country -> options
@@ -67,84 +67,84 @@ class ExecuteTurnResponse(BaseModel):
 
 
 class PlayerChoiceRequest(BaseModel):
-    """玩家提交选择请求"""
+    """Player submit choice request"""
     session_id: str
     choice_id: str
 
 
 class PlayerChoiceResponse(BaseModel):
-    """玩家提交选择响应"""
+    """Player submit choice response"""
     success: bool
     turn_result: TurnResult
     next_turn_ready: bool
 
 
 # ============================================================================
-# 生命周期管理
+# Lifecycle Management
 # ============================================================================
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """应用生命周期管理"""
+    """Application lifecycle management"""
     global knowledge_base, event_workflow, ai_decision_maker, ending_generator
 
     print("="*70)
-    print("初始化多Agent游戏服务器...")
+    print("Initializing multi-agent game server...")
     print("="*70)
 
     try:
-        # 加载知识库
-        print("\n1. 加载知识库...")
+        # Load knowledge base
+        print("\n1. Loading knowledge base...")
         try:
             knowledge_base = get_knowledge_base()
             stats = knowledge_base.get_stats()
-            print(f"   [OK] 加载了 {stats['total_events']} 个历史事件")
+            print(f"   [OK] Loaded {stats['total_events']} historical events")
         except Exception as e:
-            print(f"   [WARNING] 知识库加载失败: {e}")
+            print(f"   [WARNING] Knowledge base loading failed: {e}")
             knowledge_base = None
 
-        # 初始化工作流
-        print("\n2. 初始化多Agent事件生成工作流...")
+        # Initialize workflow
+        print("\n2. Initializing multi-agent event generation workflow...")
         event_workflow = MultiAgentEventWorkflow(knowledge_base=knowledge_base)
-        print("   [OK] 多Agent工作流已就绪")
+        print("   [OK] Multi-agent workflow ready")
 
-        # 初始化AI决策系统
-        print("\n3. 初始化AI决策系统...")
+        # Initialize AI decision system
+        print("\n3. Initializing AI decision system...")
         llm = get_llm()
         ai_decision_maker = AIDecisionMaker(llm)
-        print("   [OK] AI决策系统已就绪")
+        print("   [OK] AI decision system ready")
 
-        # 初始化结局生成器
-        print("\n4. 初始化结局生成系统...")
+        # Initialize ending generator
+        print("\n4. Initializing ending generation system...")
         ending_generator = EndingGenerator(llm)
-        print("   [OK] 结局生成系统已就绪")
+        print("   [OK] Ending generation system ready")
 
         print("\n" + "="*70)
-        print("[SUCCESS] 多Agent服务器初始化完成!")
+        print("[SUCCESS] Multi-agent server initialization complete!")
         print("="*70 + "\n")
 
     except Exception as e:
-        print(f"\n[ERROR] 初始化失败: {e}")
+        print(f"\n[ERROR] Initialization failed: {e}")
         import traceback
         traceback.print_exc()
 
     yield
 
-    print("\n服务器关闭中...")
+    print("\nServer shutting down...")
 
 
 # ============================================================================
-# 创建FastAPI应用
+# Create FastAPI Application
 # ============================================================================
 
 app = FastAPI(
     title="WWII Multi-Agent Simulation API",
-    description="基于多Agent系统的二战模拟游戏API",
+    description="Multi-agent system based WWII simulation game API",
     version="2.0.0",
     lifespan=lifespan
 )
 
-# 配置CORS
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -155,28 +155,28 @@ app.add_middleware(
 
 
 # ============================================================================
-# API端点
+# API Endpoints
 # ============================================================================
 
 @app.get("/")
 async def root():
-    """根端点"""
+    """Root endpoint"""
     return {
         "name": "WWII Multi-Agent Simulation API",
         "version": "2.0.0",
         "status": "running",
         "features": [
-            "多Agent并行决策",
-            "AI个性化决策",
-            "回合制系统",
-            "动态世界状态"
+            "Multi-agent parallel decision-making",
+            "AI personalized decisions",
+            "Turn-based system",
+            "Dynamic world state"
         ]
     }
 
 
 @app.get("/health")
 async def health_check():
-    """健康检查"""
+    """Health check"""
     return {
         "status": "healthy",
         "knowledge_base": knowledge_base is not None,
@@ -189,14 +189,14 @@ async def health_check():
 @app.post("/api/multi-agent/start", response_model=MultiAgentStartResponse)
 async def start_multi_agent_game(request: MultiAgentStartRequest):
     """
-    启动多Agent游戏
+    Start multi-agent game
 
-    创建3个国家Agent，玩家控制其中一个，AI控制其余
+    Create 3 country agents, player controls one, AI controls the rest
     """
     try:
         session_id = str(uuid.uuid4())
 
-        # 创建三个Agent
+        # Create three agents
         agents = {}
         for country_code in ["GER", "UK", "USSR"]:
             preset = PRESET_AGENTS[country_code]
@@ -214,7 +214,7 @@ async def start_multi_agent_game(request: MultiAgentStartRequest):
 
             agents[country_code] = agent
 
-        # 创建世界状态
+        # Create world state
         world_state = WorldState(
             current_turn=1,
             current_year=1939,
@@ -228,83 +228,83 @@ async def start_multi_agent_game(request: MultiAgentStartRequest):
             military_power={"GER": 100, "UK": 90, "USSR": 110},
             economic_strength={"GER": 80, "UK": 100, "USSR": 70},
             territories={
-                "GER": ["德国本土"],
-                "UK": ["英国本土"],
-                "USSR": ["苏联本土"]
+                "GER": ["Germany mainland"],
+                "UK": ["United Kingdom mainland"],
+                "USSR": ["Soviet Union mainland"]
             }
         )
 
-        # 创建回合管理器
+        # Create turn manager
         turn_manager = TurnManager(world_state)
 
-        # 保存会话
+        # Save session
         multi_agent_sessions[session_id] = {
             "world_state": world_state,
             "turn_manager": turn_manager,
             "player_country": request.player_country
         }
 
-        # 收集AI Agent
+        # Collect AI agents
         ai_agents = [
             agent for code, agent in agents.items()
             if code != request.player_country
         ]
 
-        print(f"\n[游戏启动] 会话 {session_id}")
-        print(f"  玩家国家: {request.player_country}")
-        print(f"  AI国家: {[a.country_code for a in ai_agents]}")
+        print(f"\n[Game Start] Session {session_id}")
+        print(f"  Player country: {request.player_country}")
+        print(f"  AI countries: {[a.country_code for a in ai_agents]}")
 
         return MultiAgentStartResponse(
             session_id=session_id,
             world_state=world_state,
             player_agent=agents[request.player_country],
             ai_agents=ai_agents,
-            message=f"多Agent游戏开始！你控制{agents[request.player_country].country_name}"
+            message=f"Multi-agent game started! You control {agents[request.player_country].country_name}"
         )
 
     except Exception as e:
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"启动游戏失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to start game: {str(e)}")
 
 
 @app.post("/api/multi-agent/turn", response_model=ExecuteTurnResponse)
 async def execute_turn(request: ExecuteTurnRequest):
     """
-    执行回合
+    Execute turn
 
-    为所有Agent生成选项，AI自动选择
+    Generate options for all agents, AI automatically chooses
     """
     if request.session_id not in multi_agent_sessions:
-        raise HTTPException(status_code=404, detail="会话不存在")
+        raise HTTPException(status_code=404, detail="Session not found")
 
     session = multi_agent_sessions[request.session_id]
     turn_manager: TurnManager = session["turn_manager"]
     world_state: WorldState = turn_manager.get_world_state()
 
     try:
-        print(f"\n[回合开始] 回合 {world_state.current_turn}")
+        print(f"\n[Turn Start] Turn {world_state.current_turn}")
 
-        # 阶段1: 规划 - 为所有Agent生成选项（并行）
+        # Phase 1: Planning - Generate options for all agents (parallel)
         turn_manager.set_phase(TurnPhase.PLANNING)
 
         agent_options = {}
 
-        print("\n  [并行] 为所有国家同时生成选项...")
+        print("\n  [Parallel] Generating options for all countries simultaneously...")
 
-        # 准备并行任务（使用线程池）
+        # Prepare parallel tasks (using thread pool)
         def generate_for_one_agent(country_code: str, agent):
             if agent.control_mode == ControlMode.OBSERVER:
                 return country_code, None
 
-            # 收集其他Agent的行动历史
+            # Collect action history from other agents
             other_actions = {
                 other_country: other_agent.action_history
                 for other_country, other_agent in world_state.agents.items()
                 if other_country != country_code
             }
 
-            # 生成选项
+            # Generate options
             branch_options = event_workflow.generate_for_agent(
                 agent=agent,
                 world_state=world_state,
@@ -313,7 +313,7 @@ async def execute_turn(request: ExecuteTurnRequest):
 
             return country_code, branch_options
 
-        # 使用线程池并行执行
+        # Execute in parallel using thread pool
         import asyncio
         from concurrent.futures import ThreadPoolExecutor
 
@@ -330,7 +330,7 @@ async def execute_turn(request: ExecuteTurnRequest):
             ]
             results = await asyncio.gather(*tasks)
 
-        # 处理结果
+        # Process results
         for country_code, branch_options in results:
             if branch_options is None:
                 continue
@@ -339,20 +339,20 @@ async def execute_turn(request: ExecuteTurnRequest):
             if branch_options and branch_options.branches:
                 agent.pending_options = branch_options.branches
                 agent_options[country_code] = branch_options.branches
-                print(f"    [OK] {agent.country_name}: 生成了 {len(branch_options.branches)} 个选项")
+                print(f"    [OK] {agent.country_name}: Generated {len(branch_options.branches)} options")
             else:
                 agent.pending_options = []
                 agent_options[country_code] = []
-                print(f"    [ERROR] {agent.country_name}: 生成失败")
+                print(f"    [ERROR] {agent.country_name}: Generation failed")
 
-        # 阶段2: 决策 - AI自动选择
+        # Phase 2: Decision - AI automatically chooses
         turn_manager.set_phase(TurnPhase.DECISION)
 
         ai_choices = {}
 
         for country_code, agent in world_state.agents.items():
             if agent.control_mode == ControlMode.AI and agent.pending_options:
-                # AI自动决策
+                # AI automatically decides
                 choice = ai_decision_maker.select_best_action(
                     agent=agent,
                     options=agent.pending_options,
@@ -362,7 +362,7 @@ async def execute_turn(request: ExecuteTurnRequest):
                 ai_choices[country_code] = choice
                 turn_manager.record_action(country_code, choice)
 
-                # 记录AI的行动到历史
+                # Record AI's action to history
                 agent.action_history.append(choice.name)
 
         return ExecuteTurnResponse(
@@ -376,18 +376,18 @@ async def execute_turn(request: ExecuteTurnRequest):
     except Exception as e:
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"执行回合失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to execute turn: {str(e)}")
 
 
 @app.post("/api/multi-agent/player-choice", response_model=PlayerChoiceResponse)
 async def player_choice(request: PlayerChoiceRequest):
     """
-    玩家提交选择
+    Player submit choice
 
-    处理玩家选择，执行结算，推进时间
+    Process player choice, execute resolution, advance time
     """
     if request.session_id not in multi_agent_sessions:
-        raise HTTPException(status_code=404, detail="会话不存在")
+        raise HTTPException(status_code=404, detail="Session not found")
 
     session = multi_agent_sessions[request.session_id]
     turn_manager: TurnManager = session["turn_manager"]
@@ -395,44 +395,44 @@ async def player_choice(request: PlayerChoiceRequest):
     player_country: str = session["player_country"]
 
     try:
-        # 找到玩家控制的Agent
+        # Find player-controlled agent
         player_agent = world_state.get_agent(player_country)
         if not player_agent:
-            raise HTTPException(status_code=404, detail="玩家Agent不存在")
+            raise HTTPException(status_code=404, detail="Player agent not found")
 
-        # 查找选择的行动
+        # Find chosen action
         player_action = next(
             (opt for opt in player_agent.pending_options if opt.id == request.choice_id),
             None
         )
 
         if player_action is None:
-            raise HTTPException(status_code=400, detail=f"无效的选择ID: {request.choice_id}")
+            raise HTTPException(status_code=400, detail=f"Invalid choice ID: {request.choice_id}")
 
-        print(f"\n[玩家选择] {player_country}: {player_action.name}")
+        print(f"\n[Player Choice] {player_country}: {player_action.name}")
 
-        # 记录玩家行动
+        # Record player action
         turn_manager.record_action(player_country, player_action)
         player_agent.action_history.append(player_action.name)
 
-        # 检查是否所有国家都已选择
+        # Check if all countries have chosen
         if not turn_manager.has_all_actions():
-            raise HTTPException(status_code=400, detail="还有其他国家未选择")
+            raise HTTPException(status_code=400, detail="Other countries have not chosen yet")
 
-        # 阶段3: 执行
+        # Phase 3: Execution
         turn_manager.set_phase(TurnPhase.EXECUTION)
 
-        # 阶段4: 结算
+        # Phase 4: Resolution
         turn_manager.set_phase(TurnPhase.RESOLUTION)
         turn_result = turn_manager.execute_resolution()
 
-        # 推进时间
+        # Advance time
         turn_manager.advance_time()
 
-        # 清空待处理行动
+        # Clear pending actions
         turn_manager.clear_pending_actions()
 
-        # 清空所有Agent的待选选项
+        # Clear all agents' pending options
         for agent in world_state.agents.values():
             agent.pending_options = []
 
@@ -447,14 +447,14 @@ async def player_choice(request: PlayerChoiceRequest):
     except Exception as e:
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"提交选择失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to submit choice: {str(e)}")
 
 
 @app.get("/api/multi-agent/world")
 async def get_world_state(session_id: str):
-    """获取世界状态"""
+    """Get world state"""
     if session_id not in multi_agent_sessions:
-        raise HTTPException(status_code=404, detail="会话不存在")
+        raise HTTPException(status_code=404, detail="Session not found")
 
     session = multi_agent_sessions[session_id]
     world_state: WorldState = session["turn_manager"].get_world_state()
@@ -463,53 +463,53 @@ async def get_world_state(session_id: str):
 
 
 class SimulateEndingRequest(BaseModel):
-    """模拟结局请求"""
+    """Simulate ending request"""
     session_id: str
 
 
 @app.post("/api/multi-agent/simulate-ending", response_model=GameEnding)
 async def simulate_ending(request: SimulateEndingRequest):
     """
-    AI驱动的结局生成
+    AI-driven ending generation
 
-    基于当前游戏状态，使用AI模拟剩余的故事并生成结局
+    Based on current game state, use AI to simulate remaining story and generate ending
     """
     if request.session_id not in multi_agent_sessions:
-        raise HTTPException(status_code=404, detail="会话不存在")
+        raise HTTPException(status_code=404, detail="Session not found")
 
     session = multi_agent_sessions[request.session_id]
     world_state: WorldState = session["turn_manager"].get_world_state()
     player_country: str = session["player_country"]
 
     try:
-        print(f"\n[结局生成] 为会话 {request.session_id} 生成结局...")
-        print(f"  当前回合: {world_state.current_turn}")
-        print(f"  当前时间: {world_state.current_year}年{world_state.current_month}月")
+        print(f"\n[Ending Generation] Generating ending for session {request.session_id}...")
+        print(f"  Current turn: {world_state.current_turn}")
+        print(f"  Current time: {world_state.current_year}/{world_state.current_month}")
 
-        # 生成触发原因
-        trigger_reason = f"玩家主动结算游戏（{world_state.current_year}年{world_state.current_month}月，第{world_state.current_turn}回合）"
+        # Generate trigger reason
+        trigger_reason = f"Player initiated game settlement ({world_state.current_year}/{world_state.current_month}, Turn {world_state.current_turn})"
 
-        # 使用AI生成结局
+        # Use AI to generate ending
         ending = ending_generator.generate_ending(
             world_state=world_state,
             trigger_reason=trigger_reason,
             player_country=player_country
         )
 
-        print(f"  [OK] 结局生成完成")
-        print(f"  结局类型: {ending.ending_type}")
-        print(f"  胜利者: {ending.winner or '无'}")
+        print(f"  [OK] Ending generation complete")
+        print(f"  Ending type: {ending.ending_type}")
+        print(f"  Winner: {ending.winner or 'None'}")
 
         return ending
 
     except Exception as e:
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"生成结局失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate ending: {str(e)}")
 
 
 # ============================================================================
-# 运行服务器
+# Run Server
 # ============================================================================
 
 if __name__ == "__main__":
@@ -518,6 +518,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "backend.api.multi_agent_server:app",
         host="0.0.0.0",
-        port=8002,  # 使用不同端口避免冲突
-        reload=False  # 多Agent模式下禁用reload
+        port=8002,  # Use different port to avoid conflicts
+        reload=False  # Disable reload in multi-agent mode
     )
