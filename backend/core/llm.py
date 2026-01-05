@@ -1,7 +1,7 @@
 """
-LLM工厂和包装器
+LLM Factory and Wrapper
 
-提供统一的LLM创建和管理接口
+Provides unified LLM creation and management interface
 """
 
 from langchain_openai import ChatOpenAI
@@ -15,7 +15,7 @@ from .custom_embeddings import LMStudioEmbeddings
 
 
 class LLMFactory:
-    """LLM工厂类"""
+    """LLM factory class"""
 
     @staticmethod
     def create_chat_llm(
@@ -24,15 +24,15 @@ class LLMFactory:
         **kwargs
     ):
         """
-        创建聊天LLM实例
+        Create chat LLM instance
 
         Args:
-            provider: LLM提供商 ("openai" 或 "lm_studio")
-            temperature: 温度参数
-            **kwargs: 其他参数
+            provider: LLM provider ("openai" or "lm_studio")
+            temperature: Temperature parameter
+            **kwargs: Other parameters
 
         Returns:
-            LLM实例
+            LLM instance
         """
         provider = provider or settings.LLM_PROVIDER
         temperature = temperature if temperature is not None else settings.OPENAI_TEMPERATURE
@@ -48,11 +48,11 @@ class LLMFactory:
             )
 
         elif provider == "lm_studio":
-            # LM Studio使用OpenAI兼容API
+            # LM Studio uses OpenAI-compatible API
             return ChatOpenAI(
                 model=settings.LM_STUDIO_MODEL,
                 base_url=settings.LM_STUDIO_BASE_URL,
-                api_key="lm-studio",  # LM Studio不需要真实API key
+                api_key="lm-studio",  # LM Studio doesn't need real API key
                 temperature=temperature,
                 **kwargs
             )
@@ -63,13 +63,13 @@ class LLMFactory:
     @staticmethod
     def create_embedding_model(provider: Optional[str] = None):
         """
-        创建Embedding模型实例
+        Create embedding model instance
 
         Args:
-            provider: Embedding提供商 ("openai", "ollama", 或 "lm_studio")
+            provider: Embedding provider ("openai", "ollama", or "lm_studio")
 
         Returns:
-            Embedding模型实例
+            Embedding model instance
         """
         provider = provider or settings.EMBEDDING_PROVIDER
 
@@ -86,7 +86,7 @@ class LLMFactory:
             )
 
         elif provider == "lm_studio":
-            # LM Studio使用自定义Embeddings类
+            # LM Studio uses custom Embeddings class
             return LMStudioEmbeddings(
                 base_url=settings.EMBEDDING_BASE_URL,
                 model=settings.EMBEDDING_MODEL
@@ -97,7 +97,7 @@ class LLMFactory:
 
 
 class CostCalculator:
-    """成本计算器"""
+    """Cost calculator"""
 
     @staticmethod
     def calculate_cost(
@@ -106,17 +106,17 @@ class CostCalculator:
         completion_tokens: int
     ) -> float:
         """
-        计算LLM调用成本
+        Calculate LLM call cost
 
         Args:
-            model: 模型名称
-            prompt_tokens: 输入token数
-            completion_tokens: 输出token数
+            model: Model name
+            prompt_tokens: Number of input tokens
+            completion_tokens: Number of output tokens
 
         Returns:
-            成本（美元）
+            Cost (USD)
         """
-        # 查找定价
+        # Look up pricing
         pricing = None
         for model_key, price in LLM_PRICING.items():
             if model_key in model:
@@ -124,10 +124,10 @@ class CostCalculator:
                 break
 
         if pricing is None:
-            # 未知模型，返回0
+            # Unknown model, return 0
             return 0.0
 
-        # 计算成本
+        # Calculate cost
         prompt_cost = (prompt_tokens / 1000) * pricing["prompt"]
         completion_cost = (completion_tokens / 1000) * pricing["completion"]
 
@@ -135,7 +135,7 @@ class CostCalculator:
 
 
 # ============================================================================
-# 全局LLM实例（懒加载）
+# Global LLM Instances (lazy loading)
 # ============================================================================
 
 _llm_instance: Optional[ChatOpenAI] = None
@@ -144,21 +144,21 @@ _embedding_instance: Optional[OllamaEmbeddings] = None
 
 def get_llm(temperature: Optional[float] = None):
     """
-    获取全局LLM实例（单例模式）
+    Get global LLM instance (singleton pattern)
 
     Args:
-        temperature: 可选的温度参数，用于覆盖默认值
+        temperature: Optional temperature parameter to override default
 
     Returns:
-        LLM实例
+        LLM instance
     """
     global _llm_instance
 
-    # 如果指定了temperature，创建新实例
+    # If temperature is specified, create new instance
     if temperature is not None:
         return LLMFactory.create_chat_llm(temperature=temperature)
 
-    # 否则使用单例
+    # Otherwise use singleton
     if _llm_instance is None:
         _llm_instance = LLMFactory.create_chat_llm()
 
@@ -167,10 +167,10 @@ def get_llm(temperature: Optional[float] = None):
 
 def get_embedding_model():
     """
-    获取全局Embedding模型实例（单例模式）
+    Get global embedding model instance (singleton pattern)
 
     Returns:
-        Embedding模型实例
+        Embedding model instance
     """
     global _embedding_instance
 
@@ -181,20 +181,20 @@ def get_embedding_model():
 
 
 # ============================================================================
-# 辅助函数
+# Utility Functions
 # ============================================================================
 
 def estimate_tokens(text: str) -> int:
     """
-    估算文本的token数（粗略估计）
+    Estimate number of tokens in text (rough estimate)
 
     Args:
-        text: 输入文本
+        text: Input text
 
     Returns:
-        估算的token数
+        Estimated number of tokens
     """
-    # 简单估算: 英文1 token ≈ 4 chars, 中文1 token ≈ 1.5 chars
+    # Simple estimation: English 1 token ≈ 4 chars, Chinese 1 token ≈ 1.5 chars
     chinese_chars = sum(1 for char in text if '\u4e00' <= char <= '\u9fff')
     other_chars = len(text) - chinese_chars
 
