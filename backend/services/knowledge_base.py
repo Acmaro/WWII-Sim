@@ -1,7 +1,7 @@
 """
-RAG知识库服务
+RAG Knowledge Base Service
 
-使用FAISS进行向量检索
+Uses FAISS for vector retrieval
 """
 
 import json
@@ -16,92 +16,92 @@ from backend.core.config import settings
 
 
 class KnowledgeBase:
-    """RAG知识库"""
+    """RAG knowledge base"""
 
     def __init__(self, events_file: Optional[str] = None):
         """
-        初始化知识库
+        Initialize knowledge base
 
         Args:
-            events_file: 历史事件JSON文件路径
+            events_file: Historical events JSON file path
         """
         self.events_file = events_file or settings.HISTORICAL_EVENTS_FILE
         self.embeddings = get_embedding_model()
 
-        # 数据存储
+        # Data storage
         self.events: List[HistoricalEvent] = []
         self.texts: List[str] = []
         self.vectors: Optional[np.ndarray] = None
         self.index: Optional[faiss.Index] = None
 
-        # 加载数据
+        # Load data
         self._load_events()
 
     def _load_events(self):
-        """加载历史事件数据"""
+        """Load historical events data"""
         events_path = Path(self.events_file)
 
         if not events_path.exists():
-            print(f"警告: 历史事件文件不存在: {self.events_file}")
+            print(f"Warning: Historical events file does not exist: {self.events_file}")
             return
 
         with open(events_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
 
-        # 解析事件
+        # Parse events
         for event_data in data:
             try:
                 event = HistoricalEvent(**event_data)
                 self.events.append(event)
 
-                # 构建检索文本
+                # Build retrieval text
                 text = self._format_event_for_retrieval(event)
                 self.texts.append(text)
 
             except Exception as e:
-                print(f"解析事件失败: {e}")
+                print(f"Failed to parse event: {e}")
                 continue
 
-        print(f"[OK] 加载了 {len(self.events)} 个历史事件")
+        print(f"[OK] Loaded {len(self.events)} historical events")
 
     def _format_event_for_retrieval(self, event: HistoricalEvent) -> str:
         """
-        格式化事件用于检索
+        Format event for retrieval
 
         Args:
-            event: 历史事件
+            event: Historical event
 
         Returns:
-            格式化的文本
+            Formatted text
         """
         return (
-            f"{event.year}年{event.month}月 "
+            f"{event.year}/{event.month} "
             f"{event.name}: "
             f"{event.description}"
         )
 
     def build_index(self):
-        """构建FAISS索引"""
+        """Build FAISS index"""
         if not self.texts:
-            print("警告: 没有数据可以建立索引")
+            print("Warning: No data to build index")
             return
 
-        print(f"正在向量化 {len(self.texts)} 个事件...")
+        print(f"Vectorizing {len(self.texts)} events...")
 
-        # 批量向量化
+        # Batch vectorization
         embeddings_list = self.embeddings.embed_documents(self.texts)
         self.vectors = np.array(embeddings_list).astype('float32')
 
-        print(f"向量维度: {self.vectors.shape}")
+        print(f"Vector dimension: {self.vectors.shape}")
 
-        # 创建FAISS索引 (L2距离)
+        # Create FAISS index (L2 distance)
         dimension = self.vectors.shape[1]
         self.index = faiss.IndexFlatL2(dimension)
 
-        # 添加向量
+        # Add vectors
         self.index.add(self.vectors)
 
-        print(f"[OK] FAISS索引构建完成: {self.index.ntotal} 个向量")
+        print(f"[OK] FAISS index built: {self.index.ntotal} vectors")
 
     def search(
         self,
@@ -110,28 +110,28 @@ class KnowledgeBase:
         filters: Optional[dict] = None
     ) -> List[RAGResult]:
         """
-        检索相关事件
+        Retrieve relevant events
 
         Args:
-            query: 查询文本
-            top_k: 返回结果数
-            filters: 过滤条件（可选）
+            query: Query text
+            top_k: Number of results to return
+            filters: Filter conditions (optional)
 
         Returns:
-            检索结果列表
+            Retrieval result list
         """
         if self.index is None:
-            print("警告: 索引未构建")
+            print("Warning: Index not built")
             return []
 
-        # 向量化查询
+        # Vectorize query
         query_embedding = self.embeddings.embed_query(query)
         query_vector = np.array([query_embedding]).astype('float32')
 
-        # FAISS检索
+        # FAISS retrieval
         distances, indices = self.index.search(query_vector, top_k)
 
-        # 构建结果
+        # Build results
         results = []
         for i, idx in enumerate(indices[0]):
             if idx >= len(self.events):
@@ -140,12 +140,12 @@ class KnowledgeBase:
             event = self.events[idx]
             distance = float(distances[0][i])
 
-            # 应用过滤器（如果有）
+            # Apply filters (if any)
             if filters:
                 if not self._apply_filters(event, filters):
                     continue
 
-            # 计算相似度分数 (距离越小越相似)
+            # Calculate similarity score (smaller distance = more similar)
             score = 1.0 / (1.0 + distance)
 
             results.append(RAGResult(
@@ -158,26 +158,26 @@ class KnowledgeBase:
 
     def _apply_filters(self, event: HistoricalEvent, filters: dict) -> bool:
         """
-        应用过滤条件
+        Apply filter conditions
 
         Args:
-            event: 事件
-            filters: 过滤条件
+            event: Event
+            filters: Filter conditions
 
         Returns:
-            是否通过过滤
+            Whether it passes the filter
         """
-        # 年份过滤
+        # Year filter
         if "year" in filters:
             if event.year != filters["year"]:
                 return False
 
-        # 国家过滤
+        # Country filter
         if "country" in filters:
             if event.country != filters["country"]:
                 return False
 
-        # 事件类型过滤
+        # Event type filter
         if "event_type" in filters:
             if event.event_type != filters["event_type"]:
                 return False
@@ -186,13 +186,13 @@ class KnowledgeBase:
 
     def get_event_by_id(self, event_id: str) -> Optional[HistoricalEvent]:
         """
-        根据ID获取事件
+        Get event by ID
 
         Args:
-            event_id: 事件ID
+            event_id: Event ID
 
         Returns:
-            事件对象或None
+            Event object or None
         """
         for event in self.events:
             if event.id == event_id:
@@ -201,27 +201,27 @@ class KnowledgeBase:
 
     def get_stats(self) -> dict:
         """
-        获取知识库统计信息
+        Get knowledge base statistics
 
         Returns:
-            统计信息字典
+            Statistics dictionary
         """
         if not self.events:
             return {"total_events": 0}
 
-        # 按年份统计
+        # Statistics by year
         year_counts = {}
         for event in self.events:
             year = event.year
             year_counts[year] = year_counts.get(year, 0) + 1
 
-        # 按类型统计
+        # Statistics by type
         type_counts = {}
         for event in self.events:
             event_type = event.event_type
             type_counts[event_type] = type_counts.get(event_type, 0) + 1
 
-        # 按国家统计
+        # Statistics by country
         country_counts = {}
         for event in self.events:
             country = event.country
@@ -238,7 +238,7 @@ class KnowledgeBase:
 
 
 # ============================================================================
-# 全局知识库实例（单例）
+# Global Knowledge Base Instance (Singleton)
 # ============================================================================
 
 _knowledge_base_instance: Optional[KnowledgeBase] = None
@@ -246,10 +246,10 @@ _knowledge_base_instance: Optional[KnowledgeBase] = None
 
 def get_knowledge_base() -> KnowledgeBase:
     """
-    获取全局知识库实例
+    Get global knowledge base instance
 
     Returns:
-        知识库实例
+        Knowledge base instance
     """
     global _knowledge_base_instance
 
@@ -261,7 +261,7 @@ def get_knowledge_base() -> KnowledgeBase:
 
 
 # ============================================================================
-# 便捷函数
+# Utility Functions
 # ============================================================================
 
 def search_historical_events(
@@ -270,15 +270,15 @@ def search_historical_events(
     filters: Optional[dict] = None
 ) -> List[RAGResult]:
     """
-    检索历史事件（便捷函数）
+    Search historical events (utility function)
 
     Args:
-        query: 查询文本
-        top_k: 返回结果数
-        filters: 过滤条件
+        query: Query text
+        top_k: Number of results to return
+        filters: Filter conditions
 
     Returns:
-        检索结果
+        Retrieval results
     """
     kb = get_knowledge_base()
     return kb.search(query, top_k=top_k, filters=filters)
