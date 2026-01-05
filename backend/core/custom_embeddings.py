@@ -1,5 +1,5 @@
 """
-自定义Embeddings类，用于LM Studio
+Custom Embeddings class for LM Studio
 """
 
 import requests
@@ -8,32 +8,32 @@ from langchain_core.embeddings import Embeddings
 
 
 class LMStudioEmbeddings(Embeddings):
-    """LM Studio自定义Embeddings实现"""
+    """LM Studio custom Embeddings implementation"""
 
     def __init__(self, base_url: str, model: str):
         """
-        初始化
+        Initialize
 
         Args:
-            base_url: LM Studio API地址
-            model: 模型名称
+            base_url: LM Studio API address
+            model: Model name
         """
         self.base_url = base_url.rstrip('/')
         self.model = model
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """
-        批量向量化文档
+        Batch vectorize documents
 
         Args:
-            texts: 文本列表
+            texts: Text list
 
         Returns:
-            向量列表
+            Vector list
         """
         embeddings = []
 
-        # 逐个处理（避免批量API问题）
+        # Process one by one (avoid batch API issues)
         for text in texts:
             embedding = self.embed_query(text)
             embeddings.append(embedding)
@@ -42,13 +42,13 @@ class LMStudioEmbeddings(Embeddings):
 
     def embed_query(self, text: str) -> List[float]:
         """
-        向量化单个查询
+        Vectorize single query
 
         Args:
-            text: 查询文本
+            text: Query text
 
         Returns:
-            向量
+            Vector
         """
         url = f"{self.base_url}/embeddings"
 
@@ -62,7 +62,7 @@ class LMStudioEmbeddings(Embeddings):
 
         data = response.json()
 
-        # 提取embedding向量
+        # Extract embedding vector
         if "data" in data and len(data["data"]) > 0:
             return data["data"][0]["embedding"]
         else:
