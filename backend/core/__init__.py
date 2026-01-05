@@ -1,7 +1,7 @@
 """
-核心模块
+Core Module
 
-包含数据模型、配置和LLM工厂
+Contains data models, configuration and LLM factory
 """
 
 from backend.core.models import (
