@@ -1,7 +1,7 @@
 """
-API模块
+API Module
 
-包含FastAPI服务器
+Contains FastAPI server
 """
 
 from backend.api.server import app

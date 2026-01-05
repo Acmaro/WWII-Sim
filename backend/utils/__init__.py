@@ -1,7 +1,7 @@
 """
-工具模块
+Utils Module
 
-包含辅助函数和工具类
+Contains utility functions and helper classes
 """
 
 __all__ = []

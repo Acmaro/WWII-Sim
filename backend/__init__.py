@@ -1,7 +1,7 @@
 """
 WWII Simulation v2 Backend
 
-基于LangGraph和LangChain的二战历史模拟系统
+WWII historical simulation system based on LangGraph and LangChain
 """
 
 __version__ = "2.0.0"

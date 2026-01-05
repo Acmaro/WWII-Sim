@@ -1,7 +1,7 @@
 """
-工作流模块
+Workflows Module
 
-包含LangGraph工作流定义
+Contains LangGraph workflow definitions
 """
 
 from backend.workflows.event_generation import (

@@ -1,7 +1,7 @@
 """
-服务模块
+Services Module
 
-包含RAG知识库和其他业务服务
+Contains RAG knowledge base and other business services
 """
 
 from backend.services.knowledge_base import (
