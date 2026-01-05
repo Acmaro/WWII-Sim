@@ -1,10 +1,10 @@
 """
-多Agent事件生成工作流
+Multi-Agent Event Generation Workflow
 
-基于原有EventGenerationWorkflow，增强以支持：
-1. Agent性格特征影响生成
-2. 世界状态上下文
-3. 其他Agent行动考虑
+Enhanced from original EventGenerationWorkflow to support:
+1. Agent personality traits affecting generation
+2. World state context
+3. Consideration of other agents' actions
 """
 
 from typing import TypedDict, Annotated, Dict, List
@@ -17,64 +17,64 @@ from backend.core.models import BranchOptions, GameEvent
 
 
 class MultiAgentGenerationState(TypedDict):
-    """多Agent事件生成状态"""
-    # 当前Agent信息
+    """Multi-agent event generation state"""
+    # Current agent information
     agent: CountryAgent
 
-    # 世界状态
+    # World state
     world_state: WorldState
 
-    # 其他Agent的最近行动
+    # Recent actions of other agents
     other_agents_actions: Dict[str, List[str]]  # country -> action names
 
-    # 输入（继承自原workflow）
+    # Input (inherited from original workflow)
     country: str
     year: int
     month: int
     history_summary: str
 
-    # 中间状态
+    # Intermediate state
     rag_context: str
     draft_events: BranchOptions | None
     quality_metrics: object | None  # QualityMetrics
     quality_score: float
 
-    # 输出
+    # Output
     final_events: BranchOptions | None
 
-    # 计数器
+    # Counter
     iterations: Annotated[int, operator.add]
 
 
 class MultiAgentEventWorkflow(EventGenerationWorkflow):
-    """多Agent事件生成工作流"""
+    """Multi-agent event generation workflow"""
 
     def __init__(self, knowledge_base=None, llm=None):
-        """初始化多Agent工作流"""
-        # 调用父类初始化（但不使用其graph）
+        """Initialize multi-agent workflow"""
+        # Call parent class initialization (but don't use its graph)
         super().__init__(knowledge_base, llm)
-        # 构建自己的图
+        # Build own graph
         self.graph = self._build_multi_agent_graph()
 
     def _build_multi_agent_graph(self):
-        """构建多Agent工作流图"""
+        """Build multi-agent workflow graph"""
         from langgraph.graph import StateGraph, END
 
         workflow = StateGraph(MultiAgentGenerationState)
 
-        # 添加节点（重用父类方法）
+        # Add nodes (reuse parent class methods)
         workflow.add_node("retrieve_context", self.retrieve_context)
         workflow.add_node("generate_draft", self.generate_draft)
         workflow.add_node("validate_quality", self.validate_quality)
         workflow.add_node("refine_events", self.refine_events)
         workflow.add_node("finalize", self.finalize)
 
-        # 定义边
+        # Define edges
         workflow.set_entry_point("retrieve_context")
         workflow.add_edge("retrieve_context", "generate_draft")
         workflow.add_edge("generate_draft", "validate_quality")
 
-        # 条件边
+        # Conditional edges
         workflow.add_conditional_edges(
             "validate_quality",
             self.should_refine,
@@ -95,11 +95,11 @@ class MultiAgentEventWorkflow(EventGenerationWorkflow):
         world_state: WorldState,
         other_actions: Dict[str, List[str]] = None
     ) -> BranchOptions | None:
-        """为特定Agent生成事件"""
+        """Generate events for specific agent"""
 
-        print(f"\n[多Agent工作流] 为 {agent.country_name} 生成事件...")
+        print(f"\n[Multi-Agent Workflow] Generating events for {agent.country_name}...")
 
-        # 准备初始状态
+        # Prepare initial state
         initial_state = {
             "agent": agent,
             "world_state": world_state,
@@ -116,26 +116,26 @@ class MultiAgentEventWorkflow(EventGenerationWorkflow):
             "iterations": 0
         }
 
-        # 执行工作流
+        # Execute workflow
         result = self.graph.invoke(initial_state)
 
         return result.get("final_events")
 
     def _build_agent_history(self, agent: CountryAgent) -> str:
-        """构建Agent历史摘要"""
+        """Build agent history summary"""
         if not agent.action_history:
-            return "游戏开始"
+            return "Game start"
 
-        # 取最近3个行动
+        # Take recent 3 actions
         recent = agent.action_history[-3:]
-        return "最近行动: " + ", ".join(recent)
+        return "Recent actions: " + ", ".join(recent)
 
     def retrieve_context(self, state: MultiAgentGenerationState):
-        """检索上下文（增强版）"""
+        """Retrieve context (enhanced version)"""
         agent = state["agent"]
         world = state["world_state"]
 
-        # 1. RAG检索历史事件
+        # 1. RAG retrieve historical events
         query = f"{agent.country_code} {agent.current_year}.{agent.current_month}"
         rag_results = []
 
@@ -143,23 +143,23 @@ class MultiAgentEventWorkflow(EventGenerationWorkflow):
             try:
                 rag_results = self.knowledge_base.search(query, top_k=5)
             except Exception as e:
-                print(f"[RAG检索] 警告: {e}")
+                print(f"[RAG Retrieval] Warning: {e}")
 
-        # 2. 构建世界状态上下文
+        # 2. Build world state context
         world_context = self._build_world_context(agent, world)
 
-        # 3. 其他Agent的行动
+        # 3. Other agents' actions
         other_actions_context = self._build_other_actions_context(
             agent,
             state["other_agents_actions"]
         )
 
-        # 组合上下文
+        # Combine context
         context_parts = []
 
-        # RAG历史
+        # RAG history
         if rag_results:
-            context_parts.append("【历史事件参考】")
+            context_parts.append("【Historical Event Reference】")
             for i, result in enumerate(rag_results, 1):
                 event = result.event
                 context_parts.append(
@@ -167,10 +167,10 @@ class MultiAgentEventWorkflow(EventGenerationWorkflow):
                     f"   {event.description}"
                 )
 
-        # 世界状态
+        # World state
         context_parts.append(world_context)
 
-        # 其他国家行动
+        # Other countries' actions
         if other_actions_context:
             context_parts.append(other_actions_context)
 
@@ -179,21 +179,21 @@ class MultiAgentEventWorkflow(EventGenerationWorkflow):
         return state
 
     def _build_world_context(self, agent: CountryAgent, world: WorldState) -> str:
-        """构建世界状态上下文"""
-        lines = ["【当前世界态势】"]
+        """Build world state context"""
+        lines = ["【Current World Situation】"]
 
-        # 外交关系
-        lines.append("外交关系:")
+        # Diplomatic relations
+        lines.append("Diplomatic Relations:")
         for country, other_agent in world.agents.items():
             if country == agent.country_code:
                 continue
 
             relation = world.get_relation(agent.country_code, country)
             status = self._relation_status(relation)
-            lines.append(f"  与{other_agent.country_name}: {relation:+.2f} ({status})")
+            lines.append(f"  With {other_agent.country_name}: {relation:+.2f} ({status})")
 
-        # 军事实力对比
-        lines.append("\n军事实力对比:")
+        # Military power comparison
+        lines.append("\nMilitary Power Comparison:")
         for country, power in world.military_power.items():
             lines.append(f"  {country}: {power}")
 
@@ -204,73 +204,73 @@ class MultiAgentEventWorkflow(EventGenerationWorkflow):
         agent: CountryAgent,
         other_actions: Dict[str, List[str]]
     ) -> str:
-        """构建其他Agent行动上下文"""
+        """Build other agents' actions context"""
         if not other_actions:
             return ""
 
-        lines = ["【其他国家最近行动】"]
+        lines = ["【Other Countries' Recent Actions】"]
         for country, actions in other_actions.items():
             if country != agent.country_code and actions:
-                latest = actions[-1] if actions else "无记录"
+                latest = actions[-1] if actions else "No records"
                 lines.append(f"  {country}: {latest}")
 
         return "\n".join(lines)
 
     def _relation_status(self, value: float) -> str:
-        """关系状态"""
+        """Relation status"""
         if value >= 0.7:
-            return "盟友"
+            return "Allies"
         elif value >= 0.3:
-            return "友好"
+            return "Friendly"
         elif value >= -0.3:
-            return "中立"
+            return "Neutral"
         elif value >= -0.7:
-            return "敌对"
+            return "Hostile"
         else:
-            return "交战"
+            return "At War"
 
     def generate_draft(self, state: MultiAgentGenerationState):
-        """生成草稿（考虑Agent性格）"""
+        """Generate draft (considering agent personality)"""
         agent = state["agent"]
 
         prompt = ChatPromptTemplate.from_template("""
-你是{country_name}的战略顾问AI。
+You are the strategic advisor AI for {country_name}.
 
-【Agent性格特征】
-激进度: {aggression} (0-1, 越高越倾向军事行动)
-外交倾向: {diplomacy} (0-1, 越高越倾向外交手段)
-经济重视度: {economic_focus} (0-1, 越高越重视经济发展)
-风险承受度: {risk_tolerance} (0-1, 越高越敢冒险)
+【Agent Personality Traits】
+Aggression: {aggression} (0-1, higher = more inclined to military action)
+Diplomacy: {diplomacy} (0-1, higher = more inclined to diplomatic means)
+Economic Focus: {economic_focus} (0-1, higher = more emphasis on economic development)
+Risk Tolerance: {risk_tolerance} (0-1, higher = more willing to take risks)
 
-【战略目标】
+【Strategic Objectives】
 {objectives}
 
-【历史背景与当前态势】
+【Historical Background and Current Situation】
 {rag_context}
 
-【任务】
-根据Agent的性格特征和战略目标，生成4个符合角色定位的行动选项。
+【Task】
+Based on the Agent's personality traits and strategic objectives, generate 4 action options that align with the character's positioning.
 
-【要求】
-1. **选项类型分布应符合Agent性格**:
-   - 如果 aggression >= 0.7: 至少2个 military 选项
-   - 如果 diplomacy >= 0.7: 至少2个 diplomatic 选项
-   - 如果 economic_focus >= 0.7: 至少2个 economic 选项
-   - 否则: 4种类型各1个（military, diplomatic, economic, political）
+【Requirements】
+1. **Option type distribution should match Agent personality**:
+   - If aggression >= 0.7: At least 2 military options
+   - If diplomacy >= 0.7: At least 2 diplomatic options
+   - If economic_focus >= 0.7: At least 2 economic options
+   - Otherwise: One of each type (military, diplomatic, economic, political)
 
-2. **风险程度匹配 risk_tolerance**:
-   - 高风险承受(>0.6): 可以有大胆冒险的选项
-   - 低风险承受(<0.4): 选项应该稳健保守
+2. **Risk level should match risk_tolerance**:
+   - High risk tolerance (>0.6): Can have bold, adventurous options
+   - Low risk tolerance (<0.4): Options should be steady and conservative
 
-3. 每个选项必须:
-   - 符合历史背景和当前态势
-   - 考虑与其他国家的关系
-   - 描述简洁（20-80字）
-   - likelihood 评分合理（0.0-1.0）
+3. Each option must:
+   - Align with historical background and current situation
+   - Consider relationships with other countries
+   - Have concise description (20-80 words)
+   - Have reasonable likelihood score (0.0-1.0)
 
 {format_instructions}
 
-直接输出JSON，不要添加markdown代码块标记或解释文字。
+Output JSON directly, do not add markdown code block markers or explanatory text.
 """)
 
         try:
@@ -291,7 +291,7 @@ class MultiAgentEventWorkflow(EventGenerationWorkflow):
             state["iterations"] = 1
 
         except Exception as e:
-            print(f"[生成草稿] 失败: {e}")
+            print(f"[Generate Draft] Failed: {e}")
             state["draft_events"] = None
             state["iterations"] = 1
 
