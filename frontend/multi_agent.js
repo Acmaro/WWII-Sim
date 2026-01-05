@@ -1,8 +1,8 @@
-// 多Agent游戏JavaScript逻辑
+// Multi-Agent Game JavaScript Logic
 
 const API_BASE = 'http://localhost:8001';
 
-// 全局状态
+// Global State
 let gameState = {
     sessionId: null,
     playerCountry: null,
@@ -13,46 +13,46 @@ let gameState = {
     playerChoice: null
 };
 
-// 国家配置
+// Country Configuration
 const COUNTRY_CONFIG = {
-    'GER': { name: '德国', flag: '🦅', color: '#e74c3c' },
-    'UK': { name: '英国', flag: '🦁', color: '#3498db' },
-    'USSR': { name: '苏联', flag: '⭐', color: '#e67e22' }
+    'GER': { name: 'Germany', flag: '🦅', color: '#e74c3c' },
+    'UK': { name: 'United Kingdom', flag: '🦁', color: '#3498db' },
+    'USSR': { name: 'Soviet Union', flag: '⭐', color: '#e67e22' }
 };
 
 // ============================================================================
-// 国家选择
+// Country Selection
 // ============================================================================
 
 function selectCountry(country) {
-    // 移除所有选中状态
+    // Remove all selected states
     document.querySelectorAll('.country-card').forEach(card => {
         card.classList.remove('selected');
     });
 
-    // 添加选中状态
+    // Add selected state
     document.querySelector(`[data-country="${country}"]`).classList.add('selected');
 
-    // 设置玩家国家
+    // Set player country
     gameState.playerCountry = country;
 
-    // 启用开始按钮
+    // Enable start button
     document.getElementById('startGameBtn').disabled = false;
 
-    console.log('选择国家:', country);
+    console.log('Selected country:', country);
 }
 
 // ============================================================================
-// 开始游戏
+// Start Game
 // ============================================================================
 
 async function startGame() {
     if (!gameState.playerCountry) {
-        alert('请先选择一个国家');
+        alert('Please select a country first');
         return;
     }
 
-    console.log('启动多Agent游戏...', gameState.playerCountry);
+    console.log('Starting multi-agent game...', gameState.playerCountry);
 
     try {
         const response = await fetch(`${API_BASE}/api/multi-agent/start`, {
@@ -65,49 +65,49 @@ async function startGame() {
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.detail || '启动失败');
+            throw new Error(error.detail || 'Failed to start');
         }
 
         const data = await response.json();
-        console.log('游戏启动成功:', data);
+        console.log('Game started successfully:', data);
 
         gameState.sessionId = data.session_id;
         gameState.worldState = data.world_state;
 
-        // 隐藏选择界面，显示游戏界面
+        // Hide selection screen, show game interface
         document.getElementById('countrySelection').classList.add('hidden');
         document.getElementById('gameInterface').classList.remove('hidden');
 
-        // 初始化界面
+        // Initialize interface
         initializeGameInterface(data);
 
-        // 开始第一回合
+        // Start first turn
         setTimeout(() => executeTurn(), 500);
 
     } catch (error) {
-        console.error('启动游戏失败:', error);
-        alert(`启动失败: ${error.message}`);
+        console.error('Failed to start game:', error);
+        alert(`Start failed: ${error.message}`);
     }
 }
 
 function initializeGameInterface(data) {
-    // 更新控制徽章
+    // Update control badges
     for (const country of ['GER', 'UK', 'USSR']) {
         const badge = document.getElementById(`badge-${country}`);
         const panel = document.getElementById(`panel-${country}`);
 
         if (country === gameState.playerCountry) {
-            badge.textContent = '玩家控制';
+            badge.textContent = 'Player Control';
             badge.className = 'control-badge player';
             panel.classList.add('player');
         } else {
-            badge.textContent = 'AI控制';
+            badge.textContent = 'AI Control';
             badge.className = 'control-badge ai';
             panel.classList.add('ai');
         }
     }
 
-    // 更新资源
+    // Update resources
     updateResources(data.world_state);
 }
 
@@ -157,7 +157,7 @@ async function executeTurn() {
 }
 
 function updateTurnInfo() {
-    document.getElementById('turnNumber').textContent = `回合 ${gameState.currentTurn}`;
+    document.getElementById('turnNumber').textContent = `Turn ${gameState.currentTurn}`;
 }
 
 // ============================================================================
@@ -226,10 +226,10 @@ function displayAIChoice(container, choice, country) {
 
 function getTypeIcon(type) {
     const icons = {
-        'military': '⚔️ 军事',
-        'diplomatic': '🤝 外交',
-        'economic': '💰 经济',
-        'political': '📢 政治'
+        'military': '⚔️ Military',
+        'diplomatic': '🤝 Diplomatic',
+        'economic': '💰 Economic',
+        'political': '📢 Political'
     };
     return icons[type] || type;
 }
@@ -688,9 +688,9 @@ ${ending.narrative}
                                     ${config.flag} ${data.name}
                                 </div>
                                 <div style="color: #ccc;">
-                                    <div style="margin-bottom: 8px;">⚔️ 军事: ${data.resources.military}</div>
-                                    <div style="margin-bottom: 8px;">💰 经济: ${data.resources.economic}</div>
-                                    <div style="margin-bottom: 8px;">🤝 外交: ${data.resources.diplomatic}</div>
+                                    <div style="margin-bottom: 8px;">⚔️ Military: ${data.resources.military}</div>
+                                    <div style="margin-bottom: 8px;">💰 Economic: ${data.resources.economic}</div>
+                                    <div style="margin-bottom: 8px;">🤝 Diplomatic: ${data.resources.diplomatic}</div>
                                     <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
                                         总行动数: ${data.total_actions}
                                     </div>
