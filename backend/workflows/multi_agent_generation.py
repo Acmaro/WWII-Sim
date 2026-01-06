@@ -159,7 +159,7 @@ class MultiAgentEventWorkflow(EventGenerationWorkflow):
 
         # RAG history
         if rag_results:
-            context_parts.append("【Historical Event Reference】")
+            context_parts.append("[Historical Event Reference]")
             for i, result in enumerate(rag_results, 1):
                 event = result.event
                 context_parts.append(
@@ -180,7 +180,7 @@ class MultiAgentEventWorkflow(EventGenerationWorkflow):
 
     def _build_world_context(self, agent: CountryAgent, world: WorldState) -> str:
         """Build world state context"""
-        lines = ["【Current World Situation】"]
+        lines = ["[Current World Situation]"]
 
         # Diplomatic relations
         lines.append("Diplomatic Relations:")
@@ -208,7 +208,7 @@ class MultiAgentEventWorkflow(EventGenerationWorkflow):
         if not other_actions:
             return ""
 
-        lines = ["【Other Countries' Recent Actions】"]
+        lines = ["[Other Countries' Recent Actions]"]
         for country, actions in other_actions.items():
             if country != agent.country_code and actions:
                 latest = actions[-1] if actions else "No records"
@@ -236,22 +236,24 @@ class MultiAgentEventWorkflow(EventGenerationWorkflow):
         prompt = ChatPromptTemplate.from_template("""
 You are the strategic advisor AI for {country_name}.
 
-【Agent Personality Traits】
+**IMPORTANT: Generate all content in English. Do not use Chinese, even if the context contains Chinese text.**
+
+[Agent Personality Traits]
 Aggression: {aggression} (0-1, higher = more inclined to military action)
 Diplomacy: {diplomacy} (0-1, higher = more inclined to diplomatic means)
 Economic Focus: {economic_focus} (0-1, higher = more emphasis on economic development)
 Risk Tolerance: {risk_tolerance} (0-1, higher = more willing to take risks)
 
-【Strategic Objectives】
+[Strategic Objectives]
 {objectives}
 
-【Historical Background and Current Situation】
+[Historical Background and Current Situation]
 {rag_context}
 
-【Task】
+[Task]
 Based on the Agent's personality traits and strategic objectives, generate 4 action options that align with the character's positioning.
 
-【Requirements】
+[Requirements]
 1. **Option type distribution should match Agent personality**:
    - If aggression >= 0.7: At least 2 military options
    - If diplomacy >= 0.7: At least 2 diplomatic options
@@ -265,7 +267,8 @@ Based on the Agent's personality traits and strategic objectives, generate 4 act
 3. Each option must:
    - Align with historical background and current situation
    - Consider relationships with other countries
-   - Have concise description (20-80 words)
+   - Have CONCISE name (maximum 60 characters, prefer under 40)
+   - Have BRIEF description (maximum 200 characters, prefer under 150)
    - Have reasonable likelihood score (0.0-1.0)
 
 {format_instructions}

@@ -55,8 +55,8 @@ class HistoricalEvent(BaseModel):
 class GameEvent(BaseModel):
     """Playable event branch in the game"""
     id: str = Field(description="Event ID")
-    name: str = Field(description="Event name", min_length=4, max_length=30)
-    description: str = Field(description="Detailed description", min_length=10, max_length=120)
+    name: str = Field(description="Event name", min_length=4, max_length=60)
+    description: str = Field(description="Detailed description", min_length=10, max_length=200)
     year: int = Field(description="Occurrence year", ge=1939, le=1945)
     month: int = Field(description="Occurrence month", ge=1, le=12)
     country: str = Field(description="Acting country")

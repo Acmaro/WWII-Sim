@@ -91,9 +91,9 @@ class EndingGenerator:
                 f"Diplomatic: {resources.get('diplomatic', 100)}"
             )
 
-            # Add action history
+            # Add action history (only last 2 to save context)
             if agent.action_history:
-                recent_actions = agent.action_history[-3:]  # Last 3 actions
+                recent_actions = agent.action_history[-2:]  # Last 2 actions only
                 summary_lines.append(
                     f"    Recent Actions: {', '.join(recent_actions)}"
                 )
@@ -128,7 +128,7 @@ class EndingGenerator:
         prompt = ChatPromptTemplate.from_messages([
             ("system", """You are a historical novelist skilled at adapting WWII history into captivating stories.
 
-Based on the provided game information, create an excellent historical narrative (600-900 words):
+Based on the provided game information, create an excellent historical narrative (400-600 words, CONCISE):
 
 **Narrative Structure:**
 1. **Opening** (10%): Briefly review key events that have occurred
@@ -187,33 +187,38 @@ Please create a complete historical story, focusing on the historical process fr
 
         analysis_lines = []
 
-        # 1. Action history analysis
+        # 1. Action history analysis (LIMITED to last 5 actions to save context)
         if agent.action_history:
-            actions = agent.action_history
-            analysis_lines.append(f"Total Actions: {len(actions)}")
+            # Only analyze recent actions to reduce context length
+            actions = agent.action_history[-5:]  # Last 5 actions only
+            analysis_lines.append(f"Actions Analyzed: {len(actions)} (recent)")
 
             # Count action types
             military_count = sum(1 for a in actions if any(k in a for k in ['军事', '进攻', '防御', '战争', 'Military', 'Attack', 'Defense', 'War']))
             diplomatic_count = sum(1 for a in actions if any(k in a for k in ['外交', '协议', '谈判', '联盟', 'Diplomatic', 'Agreement', 'Negotiation', 'Alliance']))
             economic_count = sum(1 for a in actions if any(k in a for k in ['经济', '生产', '工业', '资源', 'Economic', 'Production', 'Industry', 'Resource']))
 
-            analysis_lines.append(f"Military Actions: {military_count}")
-            analysis_lines.append(f"Diplomatic Actions: {diplomatic_count}")
-            analysis_lines.append(f"Economic Actions: {economic_count}")
+            # Only include non-zero counts
+            if military_count > 0:
+                analysis_lines.append(f"Military focus: {military_count}/{len(actions)}")
+            if diplomatic_count > 0:
+                analysis_lines.append(f"Diplomatic focus: {diplomatic_count}/{len(actions)}")
+            if economic_count > 0:
+                analysis_lines.append(f"Economic focus: {economic_count}/{len(actions)}")
 
             # Determine dominant strategy
             if military_count > diplomatic_count and military_count > economic_count:
-                analysis_lines.append("Dominant Strategy: Military Expansion")
+                analysis_lines.append("Strategy: Military Expansion")
             elif diplomatic_count > military_count and diplomatic_count > economic_count:
-                analysis_lines.append("Dominant Strategy: Diplomacy First")
+                analysis_lines.append("Strategy: Diplomacy First")
             elif economic_count > military_count and economic_count > diplomatic_count:
-                analysis_lines.append("Dominant Strategy: Economic Development")
+                analysis_lines.append("Strategy: Economic Development")
             else:
-                analysis_lines.append("Dominant Strategy: Balanced Development")
+                analysis_lines.append("Strategy: Balanced")
 
-            # Recent actions
-            recent = actions[-3:] if len(actions) >= 3 else actions
-            analysis_lines.append(f"Recent Actions: {', '.join(recent)}")
+            # Recent actions (only last 2)
+            recent = actions[-2:] if len(actions) >= 2 else actions
+            analysis_lines.append(f"Recent: {', '.join(recent)}")
 
         # 2. Diplomatic status
         allies = []

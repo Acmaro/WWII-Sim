@@ -146,18 +146,20 @@ class EventGenerationWorkflow:
         prompt = ChatPromptTemplate.from_template(
             """You are a WWII history expert and game designer.
 
-【Historical Background Reference】
+**IMPORTANT: Generate all content in English. Do not use Chinese.**
+
+[Historical Background Reference]
 {rag_context}
 
-【Current Game Situation】
+[Current Game Situation]
 Country: {country}
 Time: {year}/{month}
 History: {history_summary}
 
-【Task】
+[Task]
 Generate 4 different strategic options for {country}.
 
-【Requirements】
+[Requirements]
 1. The 4 options must have completely different types:
    - military
    - diplomatic
@@ -168,7 +170,8 @@ Generate 4 different strategic options for {country}.
    - Align with historical background and current situation
    - Have clear actions and expected results
    - Have reasonable likelihood score (0.0-1.0)
-   - Have concise description (20-80 words, shorter is better)
+   - Have CONCISE name (maximum 60 characters, prefer under 40)
+   - Have BRIEF description (maximum 200 characters, prefer under 150)
 
 3. Options should cover different strategic directions:
    - Aggressive offensive

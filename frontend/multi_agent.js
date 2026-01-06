@@ -1,6 +1,6 @@
 // Multi-Agent Game JavaScript Logic
 
-const API_BASE = 'http://localhost:8001';
+const API_BASE = 'http://localhost:8000';
 
 // Global State
 let gameState = {
@@ -112,11 +112,11 @@ function initializeGameInterface(data) {
 }
 
 // ============================================================================
-// 执行回合
+// Execute Turn
 // ============================================================================
 
 async function executeTurn() {
-    // 显示加载状态
+    // Show loading state
     showLoading();
 
     try {
@@ -130,28 +130,28 @@ async function executeTurn() {
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.detail || '执行回合失败');
+            throw new Error(error.detail || 'Failed to execute turn');
         }
 
         const data = await response.json();
 
-        // 更新回合数
+        // Update turn number
         gameState.currentTurn = data.turn_number;
         gameState.agentOptions = data.agent_options;
         gameState.aiChoices = data.ai_choices;
 
-        console.log(`\n执行回合 ${gameState.currentTurn}`);
-        console.log('回合数据:', data);
+        console.log(`\nExecuting turn ${gameState.currentTurn}`);
+        console.log('Turn data:', data);
 
-        // 更新界面
+        // Update interface
         updateTurnInfo();
         displayAllOptions(data);
 
         hideLoading();
 
     } catch (error) {
-        console.error('执行回合失败:', error);
-        alert(`执行回合失败: ${error.message}`);
+        console.error('Failed to execute turn:', error);
+        alert(`Failed to execute turn: ${error.message}`);
         hideLoading();
     }
 }
@@ -161,7 +161,7 @@ function updateTurnInfo() {
 }
 
 // ============================================================================
-// 显示选项
+// Display Options
 // ============================================================================
 
 function displayAllOptions(data) {
@@ -170,10 +170,10 @@ function displayAllOptions(data) {
         const options = data.agent_options[country] || [];
 
         if (country === gameState.playerCountry) {
-            // 玩家国家：显示可选择的选项
+            // Player country: display selectable options
             displayPlayerOptions(container, options, country);
         } else {
-            // AI国家：显示AI的选择
+            // AI country: display AI's choice
             const aiChoice = data.ai_choices[country];
             displayAIChoice(container, aiChoice, country);
         }
@@ -182,11 +182,11 @@ function displayAllOptions(data) {
 
 function displayPlayerOptions(container, options, country) {
     if (options.length === 0) {
-        container.innerHTML = '<div class="loading">生成选项中...</div>';
+        container.innerHTML = '<div class="loading">Generating options...</div>';
         return;
     }
 
-    let html = '<h3 style="margin-bottom: 15px;">选择你的行动：</h3>';
+    let html = '<h3 style="margin-bottom: 15px;">Choose Your Action:</h3>';
 
     options.forEach(option => {
         html += `
@@ -205,13 +205,13 @@ function displayPlayerOptions(container, options, country) {
 
 function displayAIChoice(container, choice, country) {
     if (!choice) {
-        container.innerHTML = '<div class="loading"><div class="spinner"></div>AI决策中...</div>';
+        container.innerHTML = '<div class="loading"><div class="spinner"></div>AI deciding...</div>';
         return;
     }
 
     const html = `
         <div class="ai-choice">
-            <div class="ai-choice-label">AI选择:</div>
+            <div class="ai-choice-label">AI Choice:</div>
             <div class="ai-choice-content">
                 ${getTypeIcon(choice.event_type)} ${choice.name}
             </div>
@@ -235,44 +235,44 @@ function getTypeIcon(type) {
 }
 
 // ============================================================================
-// 选择选项
+// Select Option
 // ============================================================================
 
 function selectOption(optionId) {
-    // 移除所有选中状态
+    // Remove all selected states
     document.querySelectorAll('.option-card').forEach(card => {
         card.classList.remove('selected');
     });
 
-    // 添加选中状态
+    // Add selected state
     document.querySelector(`[data-option-id="${optionId}"]`).classList.add('selected');
 
-    // 记录选择
+    // Record selection
     gameState.playerChoice = optionId;
 
-    // 启用确认按钮
+    // Enable confirm button
     document.getElementById('confirmBtn').disabled = false;
 
-    console.log('选择行动:', optionId);
+    console.log('Selected action:', optionId);
 }
 
 // ============================================================================
-// 确认选择
+// Confirm Choice
 // ============================================================================
 
 async function confirmChoice() {
     if (!gameState.playerChoice) {
-        alert('请先选择一个行动');
+        alert('Please select an action first');
         return;
     }
 
-    console.log('提交选择:', gameState.playerChoice);
+    console.log('Submitting choice:', gameState.playerChoice);
 
-    // 禁用确认按钮
+    // Disable confirm button
     document.getElementById('confirmBtn').disabled = true;
 
-    // 显示加载
-    showLoading('处理所有国家的行动...');
+    // Show loading
+    showLoading('Processing all countries\' actions...');
 
     try {
         const response = await fetch(`${API_BASE}/api/multi-agent/player-choice`, {
@@ -286,62 +286,62 @@ async function confirmChoice() {
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.detail || '提交失败');
+            throw new Error(error.detail || 'Failed to submit');
         }
 
         const data = await response.json();
-        console.log('回合结果:', data);
+        console.log('Turn result:', data);
 
         hideLoading();
 
-        // 显示回合结果
+        // Display turn result
         displayTurnResult(data.turn_result);
 
-        // 获取并更新世界状态（更新资源显示）
+        // Get and update world state (update resource display)
         await updateWorldState();
 
-        // 清空选择
+        // Clear selection
         gameState.playerChoice = null;
 
-        // 检查游戏是否结束
+        // Check if game is over
         if (data.turn_result.is_game_over) {
-            console.log('[游戏结束]', data.turn_result.ending_trigger);
+            console.log('[Game Over]', data.turn_result.ending_trigger);
 
-            // 显示结局提示，询问是否生成完整结局
+            // Show ending prompt, ask if user wants to generate full ending
             setTimeout(() => {
-                if (confirm(`游戏结束！\n原因：${data.turn_result.ending_trigger}\n\n是否让AI生成完整的结局故事？`)) {
+                if (confirm(`Game Over!\nReason: ${data.turn_result.ending_trigger}\n\nWould you like AI to generate a complete ending story?`)) {
                     generateEnding();
                 }
             }, 2000);
         } else {
-            // 延迟后开始下一回合（不隐藏结果）
+            // Start next turn after delay (don't hide results)
             setTimeout(() => {
                 executeTurn();
             }, 3000);
         }
 
     } catch (error) {
-        console.error('提交选择失败:', error);
-        alert(`提交失败: ${error.message}`);
+        console.error('Failed to submit choice:', error);
+        alert(`Failed to submit: ${error.message}`);
         document.getElementById('confirmBtn').disabled = false;
         hideLoading();
     }
 }
 
 // ============================================================================
-// 显示回合结果
+// Display Turn Result
 // ============================================================================
 
 function displayTurnResult(result) {
     const panel = document.getElementById('turnResult');
     const turnId = `turn-${result.turn_number}`;
 
-    // 构建回合内容
+    // Build turn content
     let contentHtml = '';
 
-    // 所有国家的行动
+    // All countries' actions
     contentHtml += '<div class="result-section">';
-    contentHtml += '<h3>各国行动</h3>';
+    contentHtml += '<h3>Countries\' Actions</h3>';
     for (const [country, action] of Object.entries(result.all_actions)) {
         const config = COUNTRY_CONFIG[country];
         contentHtml += `
@@ -358,15 +358,15 @@ function displayTurnResult(result) {
     }
     contentHtml += '</div>';
 
-    // 外交影响（去重合并）
+    // Diplomatic impact (deduplicate and merge)
     if (result.diplomatic_changes && result.diplomatic_changes.length > 0) {
         contentHtml += '<div class="result-section">';
-        contentHtml += '<h3>外交关系变化</h3>';
+        contentHtml += '<h3>Diplomatic Changes</h3>';
 
-        // 合并重复的关系对
+        // Merge duplicate relation pairs
         const relationMap = new Map();
         result.diplomatic_changes.forEach(change => {
-            // 创建统一的key（总是字母序小的在前）
+            // Create unified key (always alphabetically sorted)
             const key = [change.country1, change.country2].sort().join('-');
 
             if (!relationMap.has(key)) {
@@ -377,14 +377,14 @@ function displayTurnResult(result) {
                     reasons: [change.reason]
                 });
             } else {
-                // 更新最终值和原因
+                // Update final value and reasons
                 const existing = relationMap.get(key);
                 existing.final_value = change.new_value;
                 existing.reasons.push(change.reason);
             }
         });
 
-        // 显示合并后的关系变化
+        // Display merged relation changes
         relationMap.forEach((data, key) => {
             const [c1, c2] = data.countries;
             const totalDelta = data.final_value - data.initial_value;
@@ -405,10 +405,10 @@ function displayTurnResult(result) {
         contentHtml += '</div>';
     }
 
-    // 经济变化
+    // Economic changes
     if (result.economic_changes && result.economic_changes.length > 0) {
         contentHtml += '<div class="result-section">';
-        contentHtml += '<h3>资源变化</h3>';
+        contentHtml += '<h3>Resource Changes</h3>';
         result.economic_changes.forEach(change => {
             const arrow = change.delta > 0 ? '↑' : '↓';
             const color = change.delta > 0 ? '#28a745' : '#dc3545';
@@ -424,7 +424,7 @@ function displayTurnResult(result) {
         contentHtml += '</div>';
     }
 
-    // 创建可折叠的回合结果div
+    // Create collapsible turn result div
     const turnDiv = document.createElement('div');
     turnDiv.className = 'turn-result-item';
     turnDiv.id = turnId;
@@ -434,7 +434,7 @@ function displayTurnResult(result) {
     turnDiv.style.background = 'rgba(255, 255, 255, 0.1)';
     turnDiv.style.border = '2px solid rgba(255, 215, 0, 0.3)';
 
-    // 标题栏（可点击折叠）
+    // Header bar (clickable to collapse)
     const headerDiv = document.createElement('div');
     headerDiv.style.padding = '12px 15px';
     headerDiv.style.background = 'rgba(255, 215, 0, 0.2)';
@@ -446,12 +446,12 @@ function displayTurnResult(result) {
     headerDiv.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 1.2em; color: #ffd700;">📜</span>
-            <strong style="font-size: 1.1em; color: #ffd700;">回合 ${result.turn_number} 结果</strong>
+            <strong style="font-size: 1.1em; color: #ffd700;">Turn ${result.turn_number} Result</strong>
         </div>
         <span class="collapse-icon" style="font-size: 1.2em; transition: transform 0.3s;">▼</span>
     `;
 
-    // 内容区域
+    // Content area
     const contentDiv = document.createElement('div');
     contentDiv.className = 'turn-content';
     contentDiv.style.padding = '15px';
@@ -460,7 +460,7 @@ function displayTurnResult(result) {
     contentDiv.style.transition = 'max-height 0.3s ease-out';
     contentDiv.innerHTML = contentHtml;
 
-    // 折叠/展开功能
+    // Collapse/expand functionality
     let isExpanded = true;
     headerDiv.onclick = () => {
         isExpanded = !isExpanded;

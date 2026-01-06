@@ -30,28 +30,30 @@ class AIDecisionMaker:
         prompt = ChatPromptTemplate.from_template("""
 You are the supreme decision-making AI for {country_name}.
 
-【Current Situation】
+**IMPORTANT: All output must be in English.**
+
+[Current Situation]
 Time: {year}/{month}
 Military Power: {military_power}
 Economic Strength: {economic_strength}
 Diplomatic Points: {diplomatic_points}
 
-【Diplomatic Relations】
+[Diplomatic Relations]
 {diplomatic_relations}
 
-【Strategic Objectives】
+[Strategic Objectives]
 {objectives}
 
-【Personality Traits】
+[Personality Traits]
 Aggression: {aggression} (0-1, higher = more inclined to military action)
 Diplomacy: {diplomacy} (0-1, higher = more inclined to diplomatic means)
 Economic Focus: {economic_focus} (0-1, higher = more emphasis on economic development)
 Risk Tolerance: {risk_tolerance} (0-1, higher = more willing to take risks)
 
-【Available Actions】
+[Available Actions]
 {options}
 
-【Evaluation Criteria】
+[Evaluation Criteria]
 1. Objective Alignment: Does the action help achieve strategic objectives
 2. Risk Assessment: Are the potential risks within acceptable range
 3. Timing Judgment: Is now the optimal time to execute this action
